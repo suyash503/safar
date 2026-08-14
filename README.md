@@ -15,9 +15,12 @@ Not shippable. What exists so far:
 
 - `index.html` — clickable prototype, self-contained, just open it in a browser
 - `backend/schema.sql` — Postgres schema, running on Supabase
+- `app/` and `lib/` — the Expo app: sign in, the age gate, and a stub Onboard screen
 - `NOTES.md` — decisions and the reasoning behind them
 
-The Android app isn't built yet.
+The app compiles but has never run on a phone. Copy `.env.example` to `.env`, fill in
+the two Supabase values, then `npx expo run:android` — Expo Go won't work, because
+sign-in needs the `safar://` scheme and that only exists in a real build.
 
 ## Privacy
 

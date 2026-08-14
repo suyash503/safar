@@ -32,11 +32,12 @@ they have no friends.
 |---|---|
 | Clickable prototype (6 modes) | **Done** — `index.html` |
 | Product & design decisions | **Done** — see below |
-| Database schema | **Done** — all 15 sections applied to Supabase and verified |
+| Database schema | **Done** — all 17 sections applied to Supabase and verified |
 | `pg_cron` sweep | **Done** — `safar-sweep`, hourly |
 | Google OAuth — web client | **Done** in Google Console + Supabase |
 | Google OAuth — Android client | **Deferred** (needs a build for the SHA-1) |
-| Expo app | **Not started** ← next |
+| Expo app | **Scaffolded** — SDK 57, expo-router, sign-in / age gate / stub Onboard |
+| Google Sign-In in the app | Written, **not yet run on a device** ← next |
 | Privacy policy / Play Data Safety | Not started |
 
 **Verified state of the database** (re-run any time to confirm nothing drifted):
@@ -197,9 +198,22 @@ move to Cloudflare R2 (10 GB free) when that runs out.
 ```
 safar/
   index.html          the prototype — 6 modes, self-contained, published as an artifact
-  HANDOFF.md          this file
+  NOTES.md            this file
+  app.json            Expo config — scheme safar://, package com.safar.app
+  .env.example        copy to .env; Supabase URL and anon key
+  app/                expo-router routes, one file per screen
+    _layout.tsx       session bootstrap and the signed-in / signed-out gate
+    index.tsx         sign in
+    age.tsx           date of birth — UPDATEs profile_private
+    onboard.tsx       stub; proves the session reaches the database
+  lib/
+    supabase.ts       client, session kept in the keystore
+    auth.ts           Google sign-in through the system browser
+    errors.ts         turns the database's exceptions into screens
+    session.tsx       session context
+    theme.ts          the palette
   backend/
-    schema.sql        full Postgres schema, 14 sections, run top to bottom in Supabase
+    schema.sql        full Postgres schema, 17 sections, run top to bottom in Supabase
   fonts/
     JANGKUY-*.otf     display face (embedded in index.html; these are the source)
     JANGKUY-LICENSE.txt
@@ -214,15 +228,22 @@ The prototype's six modes: **Sign up · Night one · Someone joins · Off route 
 
 Backend is finished and verified. Everything below is app work.
 
-1. **Scaffold the Expo app** — package `com.safar.app`, deep link scheme `safar://`
-2. Add `safar://auth/callback` to Supabase → Authentication → URL Configuration
-3. Google Sign-In in the app (the browser flow already works; this is the same
-   thing through `expo-auth-session`)
-4. Age gate writes `dob` — `update profile_private set dob = ... where id = auth.uid()`.
-   The row already exists (created with the account), so this is an UPDATE not an
-   INSERT. Adding a journey **fails with an exception** until dob is set and 18+,
-   so the app must handle that error and route the user back to the age screen.
-5. Add a journey → `onboard_list()` returning real rows
+1. ~~Scaffold the Expo app~~ — done. SDK 57, `expo-router`, `com.safar.app`, scheme
+   `safar://`. `npm run typecheck` is clean and `expo config` resolves.
+2. Add `safar://auth/callback` to Supabase → Authentication → URL Configuration.
+   **Not done — dashboard work, and sign-in fails until it is.**
+3. Google Sign-In — written in `lib/auth.ts` (PKCE, system browser, deep link back).
+   **Never run on a device.** Expo Go cannot do a custom scheme, so this needs a
+   development build: `npx expo run:android`, which also produces the debug SHA-1
+   the Android OAuth client wants.
+4. ~~Age gate writes `dob`~~ — done in `app/age.tsx`, an UPDATE not an INSERT.
+   The journey exception is caught in `lib/errors.ts`, which matches on the two
+   messages from §17 and routes back to the age screen. **Match on message text is
+   the weak point** — change the wording in schema.sql and the app stops routing.
+   Worth an errcode if it ever moves.
+5. Add a journey properly → service picker off the bundled timetable, then
+   `onboard_list()` returning real rows. `app/onboard.tsx` is a stub that inserts
+   a hardcoded 12229 to prove the round trip.
 6. Chat + offline outbox (local write first, `client_id` for idempotent retry)
 7. Editable profile screen for the rest of `profile_private`
 8. Privacy policy + Play Data Safety declaration

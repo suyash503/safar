@@ -1,0 +1,35 @@
+{
+  "expo": {
+    "name": "Safar",
+    "slug": "safar",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "scheme": "safar",
+    "userInterfaceStyle": "dark",
+    "backgroundColor": "#02122F",
+    "newArchEnabled": true,
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.safar.app"
+    },
+    "android": {
+      "package": "com.safar.app",
+      "adaptiveIcon": {
+        "backgroundColor": "#02122F",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-secure-store",
+      "expo-web-browser"
+    ]
+  }
+}
