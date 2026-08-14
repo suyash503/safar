@@ -49,3 +49,6 @@ ios/Pods/
 .DS_Store
 Thumbs.db
 desktop.ini
+
+# throwaway auth diagnostic — holds project keys while testing
+test-auth.html

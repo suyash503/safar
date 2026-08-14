@@ -48,6 +48,24 @@ ANON GRANTS 0 · authenticated tables 11 · cron job safar-sweep active
 
 `ANON GRANTS 0` is the important one — an unauthenticated client can reach nothing.
 
+**Verified from a real signed-in browser session**, all six passing:
+
+1. Google sign-in returns a session
+2. `handle_new_user` creates the profile row with name and photo from Google
+3. RLS isolation — one visible profile, your own, since you share no journey
+4. `profile_private` readable only by its owner
+5. `onboard_list()` RPC callable
+6. Anonymous client rejected outright
+
+Kept locally as `test-auth.html` (gitignored — it holds project keys in browser
+storage). Worth re-running after any schema change.
+
+**Gotcha that cost an hour:** an RLS policy is evaluated as the *querying* role, so
+`authenticated` needs EXECUTE on every function a policy calls. `SECURITY DEFINER`
+governs what the body may do once running — it does not grant the right to call it.
+Section 16 fixes this for `shares_journey` and `is_blocked_with`. Add the grant in the
+same breath as any future policy that calls a helper.
+
 ---
 
 ## The core mechanic — mutual unlock
@@ -194,16 +212,21 @@ The prototype's six modes: **Sign up · Night one · Someone joins · Off route 
 
 ## Next steps
 
+Backend is finished and verified. Everything below is app work.
+
 1. **Scaffold the Expo app** — package `com.safar.app`, deep link scheme `safar://`
 2. Add `safar://auth/callback` to Supabase → Authentication → URL Configuration
-3. Google Sign-In end to end → profile row created by the `handle_new_user` trigger
-4. **First real RLS test:** signed in from the client, `select count(*) from profile_private`
-   must return exactly 1. This cannot be tested from the SQL editor — that runs as a
-   superuser and bypasses RLS entirely.
+3. Google Sign-In in the app (the browser flow already works; this is the same
+   thing through `expo-auth-session`)
+4. Onboarding must insert the `profile_private` row when the user passes the age
+   gate — Google gives no date of birth, and `dob` is NOT NULL
 5. Add a journey → `onboard_list()` returning real rows
 6. Chat + offline outbox (local write first, `client_id` for idempotent retry)
-7. Editable profile screen to populate `profile_private` (see Known gaps)
+7. Editable profile screen for the rest of `profile_private`
 8. Privacy policy + Play Data Safety declaration
+
+**Before production:** remove `http://localhost:8000/**` from Supabase's redirect
+allowlist, and add the Google Play App Signing SHA-1 to the Android OAuth client.
 
 ---
 

@@ -584,9 +584,9 @@ grant execute on function public.start_dm(uuid, text, date)   to authenticated;
 -- sweep_expired() stays ungranted on purpose. pg_cron runs it as postgres;
 -- no client should be able to trigger a mass delete.
 
--- The helper predicates are called from inside RLS policies and security-definer
--- functions, so they need no client grant. Leaving them ungranted also stops
--- anyone probing "is this person on my train" outside of onboard_list().
+-- NOTE: see section 16. The claim that the helper predicates need no client grant
+-- was wrong — RLS policies run as the querying role, so `authenticated` must be
+-- able to execute any function a policy calls.
 
 -- ============================================================================
 -- 15. EXPIRY AT THE POLICY LEVEL  — additive, safe to run on an applied schema
@@ -645,3 +645,27 @@ create policy plans_read on public.plans
         and j.expires_at   > now()
     )
   );
+
+-- ============================================================================
+-- 16. FIX: EXECUTE ON THE PREDICATES USED INSIDE POLICIES
+-- ============================================================================
+-- Section 14 revoked execute on these from PUBLIC and never granted it back,
+-- on the mistaken assumption that a policy runs with the policy owner's rights.
+-- It does not. An RLS policy is evaluated as the *querying* role, so a client
+-- selecting from `profiles` must itself be able to execute the functions that
+-- policy calls — otherwise every read fails with "permission denied for function".
+--
+-- Symptom this fixes: profiles queries returning permission denied while
+-- profile_private, journeys and onboard_list() all work, because those paths
+-- either use auth.uid() alone or run inside a SECURITY DEFINER function.
+--
+-- This is not a privacy loss. shares_journey() only reports people who set
+-- visibility='everyone', so an invisible traveller stays invisible, and the
+-- functions take a uuid you could only have obtained from onboard_list() in
+-- the first place.
+
+grant execute on function public.shares_journey(uuid)   to authenticated;
+grant execute on function public.is_blocked_with(uuid)  to authenticated;
+grant execute on function public.is_unlocked_with(uuid) to authenticated;
+
+-- sweep_expired() stays ungranted. No policy calls it and no client should.
