@@ -218,8 +218,10 @@ Backend is finished and verified. Everything below is app work.
 2. Add `safar://auth/callback` to Supabase → Authentication → URL Configuration
 3. Google Sign-In in the app (the browser flow already works; this is the same
    thing through `expo-auth-session`)
-4. Onboarding must insert the `profile_private` row when the user passes the age
-   gate — Google gives no date of birth, and `dob` is NOT NULL
+4. Age gate writes `dob` — `update profile_private set dob = ... where id = auth.uid()`.
+   The row already exists (created with the account), so this is an UPDATE not an
+   INSERT. Adding a journey **fails with an exception** until dob is set and 18+,
+   so the app must handle that error and route the user back to the age screen.
 5. Add a journey → `onboard_list()` returning real rows
 6. Chat + offline outbox (local write first, `client_id` for idempotent retry)
 7. Editable profile screen for the rest of `profile_private`
@@ -232,9 +234,11 @@ allowlist, and add the Google Play App Signing SHA-1 to the Android OAuth client
 
 ## Known gaps
 
-- **`profile_private` is never populated.** Unlock reveals college/year/hometown/Instagram,
-  but sign-up asks for none of them. Needs an editable profile screen — keep sign-up at
-  two taps.
+- **Only `dob` gets collected.** Section 17 means every account now has a `profile_private`
+  row and the age gate is enforced in the database. But college, year, hometown and
+  Instagram are still never asked for anywhere, so unlocking currently reveals mostly
+  nulls. Needs an editable profile screen — filled in later, not during sign-up, which
+  stays at two taps.
 - **`reports.chat_copy`** stores conversation snapshots permanently, outliving the expiry
   that governs everything else. Correct for a safety record; decide on redaction after
   review and state it in the privacy policy.

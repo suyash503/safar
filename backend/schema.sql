@@ -669,3 +669,61 @@ grant execute on function public.is_blocked_with(uuid)  to authenticated;
 grant execute on function public.is_unlocked_with(uuid) to authenticated;
 
 -- sweep_expired() stays ungranted. No policy calls it and no client should.
+
+-- ============================================================================
+-- 17. NO HALF-CREATED ACCOUNTS
+-- ============================================================================
+-- Google supplies no date of birth, so `profile_private` could not be created by
+-- handle_new_user() while dob was NOT NULL. That left a window where a user had a
+-- profile but no private half — and in that window unlocking someone returned an
+-- empty result rather than an error. A feature that silently does nothing.
+--
+-- Fixed by inverting it: the private row is created with the account and dob is
+-- filled in at the age gate. The 18+ requirement then moves from "a screen the app
+-- shows" to "a condition the database enforces" — you cannot appear on a train
+-- until you have declared a date of birth that makes you an adult.
+
+alter table public.profile_private alter column dob drop not null;
+
+-- create both halves together
+create or replace function public.handle_new_user()
+returns trigger language plpgsql security definer set search_path = public as $$
+begin
+  insert into public.profiles (id, first_name, photo_url)
+  values (
+    new.id,
+    coalesce(split_part(new.raw_user_meta_data->>'full_name', ' ', 1), 'Traveller'),
+    new.raw_user_meta_data->>'avatar_url'
+  )
+  on conflict (id) do nothing;
+
+  insert into public.profile_private (id) values (new.id)
+  on conflict (id) do nothing;
+
+  return new;
+end; $$;
+
+-- backfill anyone who signed up before this ran
+insert into public.profile_private (id)
+select p.id from public.profiles p
+left join public.profile_private pp on pp.id = p.id
+where pp.id is null;
+
+-- the age gate, enforced where it cannot be skipped
+create or replace function public.assert_adult()
+returns trigger language plpgsql security definer set search_path = public as $$
+declare d date;
+begin
+  select dob into d from profile_private where id = new.user_id;
+  if d is null then
+    raise exception 'set your date of birth before adding a journey';
+  end if;
+  if d > current_date - interval '18 years' then
+    raise exception 'Safar is only for people over 18';
+  end if;
+  return new;
+end; $$;
+
+drop trigger if exists journeys_adult on public.journeys;
+create trigger journeys_adult before insert on public.journeys
+  for each row execute function public.assert_adult();
