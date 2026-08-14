@@ -1,0 +1,51 @@
+# ---------------------------------------------------------------------------
+# Secrets
+# ---------------------------------------------------------------------------
+# The Supabase ANON key is safe to commit — it's designed to be public and RLS
+# is what protects the data. The SERVICE_ROLE key is not: it bypasses every
+# policy in backend/schema.sql. Keep both in .env anyway; habits beat judgement.
+.env
+.env.*
+!.env.example
+google-services.json
+*.keystore
+*.jks
+
+# ---------------------------------------------------------------------------
+# Fonts
+# ---------------------------------------------------------------------------
+# Only ship faces we're licensed to redistribute. Jangkuy is committed on
+# purpose — free for commercial use, licence in fonts/. Anything else stays out.
+*.zip
+fonts/*
+!fonts/JANGKUY-*
+
+# ---------------------------------------------------------------------------
+# Node / Expo / React Native  (arrives with the app scaffold)
+# ---------------------------------------------------------------------------
+node_modules/
+.expo/
+dist/
+web-build/
+*.tsbuildinfo
+npm-debug.log*
+yarn-error.log*
+
+# Native build output
+android/app/build/
+android/build/
+android/.gradle/
+ios/build/
+ios/Pods/
+*.apk
+*.aab
+*.ipa
+
+# ---------------------------------------------------------------------------
+# Editors and OS
+# ---------------------------------------------------------------------------
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+desktop.ini

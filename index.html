@@ -1,0 +1,2379 @@
+<title>Safar — prototype v1.0</title>
+
+<style>
+/* ================= page tokens ================= */
+:root{
+  --ground:#F0ECDD;--panel:#F8F5EA;--ink:#02122F;--ink-2:#495B7D;--ink-3:#55668A;
+  --line:#D8D2BF;--line-soft:#E6E1D1;
+  --accent:#3D5578;--accent-vivid:#495B7D;--yellow:#8BA3C5;--blue:#23354D;--green:#3D5578;
+  --display:"Archivo Black","Franklin Gothic Heavy","Arial Black","Segoe UI Black",system-ui,sans-serif;
+  /* Jangkuy is embedded above, so this resolves everywhere. The rest is insurance. */
+  --wide:"Jangkuy","Archivo Expanded","Archivo Black","Arial Black","Segoe UI Black",system-ui,sans-serif;
+  --ui:"Segoe UI Variable Display","Segoe UI",system-ui,-apple-system,"Helvetica Neue",Arial,sans-serif;
+  --mono:"Cascadia Mono",Consolas,ui-monospace,"SF Mono",monospace;
+  --shadow:0 2px 4px rgba(20,17,28,.05),0 20px 50px rgba(20,17,28,.13);
+}
+@media (prefers-color-scheme:dark){
+  :root:not([data-theme="light"]){
+    --ground:#02122F;--panel:#0C2145;--ink:#F0ECDD;--ink-2:#8BA3C5;--ink-3:#5C7398;
+    --line:#23354D;--line-soft:#18304F;
+    --accent:#8BA3C5;--accent-vivid:#8BA3C5;--yellow:#8BA3C5;--blue:#6E8FC4;--green:#93C3C9;
+    --shadow:0 2px 4px rgba(0,0,0,.4),0 24px 60px rgba(0,0,0,.5);
+  }
+}
+:root[data-theme="dark"]{
+  --ground:#02122F;--panel:#0C2145;--ink:#F0ECDD;--ink-2:#8BA3C5;--ink-3:#5C7398;
+  --line:#23354D;--line-soft:#18304F;
+  --accent:#8BA3C5;--accent-vivid:#8BA3C5;--yellow:#8BA3C5;--blue:#6E8FC4;--green:#93C3C9;
+  --shadow:0 2px 4px rgba(0,0,0,.4),0 24px 60px rgba(0,0,0,.5);
+}
+/* Winter palette: Moonlight F0ECDD · Frost 8BA3C5 · Steel 495B7D · Storm 23354D · Oxford 02122F.
+   The app runs on the two darkest, lifts on Frost, and spends Moonlight on the things you tap. */
+:root{
+  --a-bg:#02122F;        /* Oxford Blue */
+  --a-surf:#0C2145;
+  --a-surf-2:#18304F;
+  --a-storm:#23354D;     /* Storm */
+  --a-line:#2B4368;
+  --a-text:#F0ECDD;      /* Moonlight */
+  --a-dim:#8BA3C5;       /* Frost Blue */
+  --a-dim-2:#6E88B0;
+  --a-steel:#495B7D;     /* Steel */
+  --a-yellow:#F0ECDD;    /* primary action — Moonlight */
+  --a-pink:#8BA3C5;      /* secondary accent — Frost */
+  --a-blue:#6E8FC4;
+  --a-green:#93C3C9;     /* cool confirm */
+  --a-alert:#E4606F;     /* functional only: danger, reporting, emergency */
+}
+
+/* Jangkuy — Azkia Fadhlan (@yukkazzu), Atas Creative Project.
+   100% free for personal and commercial use, per the licence shipped with the font.
+   Embedded so the published page renders it for everyone, not just this machine. */
+@font-face{font-family:"Jangkuy";font-style:normal;font-weight:700;font-display:swap;src:url(data:font/otf;base64,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) format("opentype")}
+@font-face{font-family:"Jangkuy";font-style:normal;font-weight:900;font-display:swap;src:url(data:font/otf;base64,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) format("opentype")}
+
+*{box-sizing:border-box}
+body{margin:0;background:var(--ground);color:var(--ink);font-family:var(--ui);font-size:16.5px;line-height:1.6;-webkit-font-smoothing:antialiased}
+h1,h2,h3,h4{margin:0;font-family:var(--display);font-weight:900;text-wrap:balance;letter-spacing:-.015em;line-height:1.05}
+:focus-visible{outline:3px solid var(--accent-vivid);outline-offset:3px;border-radius:4px}
+.wrap{max-width:1180px;margin:0 auto;padding:0 28px}
+.eyebrow{font-family:var(--mono);font-size:11px;letter-spacing:.17em;text-transform:uppercase;color:var(--ink-3)}
+
+/* ================= hero ================= */
+.hero{padding:70px 0 50px}
+.mark{font-family:var(--display);font-size:clamp(64px,13vw,150px);line-height:.84;letter-spacing:-.035em;text-transform:uppercase}
+.mark em{font-style:normal;color:var(--accent-vivid)}
+.hero-strip{display:inline-flex;flex-wrap:wrap;margin:26px 0 0;border:2px solid var(--ink);border-radius:2px;overflow:hidden}
+.hero-strip span{font-family:var(--mono);font-size:11.5px;letter-spacing:.12em;text-transform:uppercase;padding:7px 13px}
+.hero-strip span+span{border-left:2px solid var(--ink)}
+.hero-strip .hl{background:var(--ink);color:var(--ground)}
+.tagline{font-family:var(--display);font-size:clamp(26px,4.4vw,46px);line-height:1.08;letter-spacing:-.02em;margin:30px 0 0;max-width:17ch}
+.tagline i{font-style:normal;color:var(--accent-vivid)}
+.lede{margin:24px 0 0;max-width:60ch;font-size:18.5px;line-height:1.6;color:var(--ink-2)}
+.lede b{color:var(--ink);font-weight:600}
+.forwho{margin-top:32px;padding:20px 22px;border:2px solid var(--ink);border-radius:4px;max-width:62ch;background:var(--panel)}
+.forwho .k{font-family:var(--mono);font-size:10.5px;letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:6px}
+.forwho p{margin:0;font-size:16.5px;line-height:1.55;color:var(--ink-2)}
+
+/* ================= prototype ================= */
+.proto{padding:30px 0 60px}
+.proto-head{display:flex;justify-content:space-between;align-items:flex-end;gap:22px;flex-wrap:wrap;margin-bottom:24px}
+.proto-grid{display:grid;grid-template-columns:minmax(0,1fr) minmax(280px,344px);gap:50px;align-items:start}
+@media(max-width:920px){.proto-grid{grid-template-columns:1fr;gap:32px}}
+.stage{display:flex;flex-direction:column;align-items:center;gap:14px}
+.hint{font-family:var(--mono);font-size:11.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--ink-3);text-align:center}
+.hint b{color:var(--accent);font-weight:400}
+.modes{display:inline-flex;border:2px solid var(--ink);border-radius:2px;overflow:hidden;flex-wrap:wrap}
+.modes button{font-family:var(--mono);font-size:11px;letter-spacing:.13em;text-transform:uppercase;padding:9px 16px;background:transparent;color:var(--ink);border:none;cursor:pointer;transition:.15s}
+.modes button+button{border-left:2px solid var(--ink)}
+.modes button[aria-pressed="true"]{background:var(--ink);color:var(--ground)}
+
+.phone{position:relative;width:374px;height:778px;flex:none;background:#05040A;border-radius:46px;padding:11px;border:1px solid var(--line);box-shadow:var(--shadow)}
+@media(max-width:420px){.phone{width:336px;height:712px;border-radius:40px}}
+.screen{position:relative;width:100%;height:100%;overflow:hidden;border-radius:36px;background:var(--a-bg);color:var(--a-text);font-family:var(--ui);font-size:15px;line-height:1.45;display:flex;flex-direction:column}
+.screen::after{content:"";position:absolute;inset:0;pointer-events:none;z-index:30;opacity:.045;mix-blend-mode:overlay;background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.85' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E")}
+.statusbar{display:flex;justify-content:space-between;align-items:center;padding:15px 24px 4px;font-family:var(--mono);font-size:11px;color:var(--a-dim-2);flex:none}
+.sb-r{display:flex;gap:6px;align-items:center}
+.sb-bat{width:19px;height:10px;border:1px solid var(--a-dim-2);border-radius:2px;position:relative}
+.sb-bat::after{content:"";position:absolute;inset:1.5px;right:6px;background:var(--a-dim-2);border-radius:1px}
+.apphead{padding:6px 20px 12px;flex:none}
+.apphead h2{font-size:30px;letter-spacing:-.025em;color:var(--a-text)}
+.apphead .sub{font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--a-dim-2);margin-top:5px}
+.body{flex:1;overflow-y:auto;padding:0 20px 104px;scrollbar-width:thin;scrollbar-color:var(--a-line) transparent}
+.body::-webkit-scrollbar{width:5px}.body::-webkit-scrollbar-thumb{background:var(--a-line);border-radius:3px}
+.pane{display:none;flex:1;flex-direction:column;min-height:0}
+.pane.on{display:flex}
+
+.btn{
+  display:block;width:100%;padding:16px;border:none;border-radius:19px;cursor:pointer;
+  font-family:var(--display);font-size:15.5px;letter-spacing:-.01em;
+  background:linear-gradient(180deg,#FCFAF3,var(--a-yellow));color:#02122F;
+  box-shadow:0 8px 20px -10px rgba(240,236,221,.55);
+  transition:transform .14s cubic-bezier(.3,1.3,.5,1),filter .15s,box-shadow .18s;
+}
+.btn:hover{filter:brightness(1.05);box-shadow:0 12px 26px -10px rgba(240,236,221,.7)}
+.btn:active{transform:scale(.975)}
+.btn-pink{background:linear-gradient(180deg,#A6BBD8,var(--a-pink));color:#02122F;box-shadow:0 8px 20px -10px rgba(139,163,197,.55)}
+.btn-pink:hover{box-shadow:0 12px 26px -10px rgba(139,163,197,.7)}
+
+/* danger is the one place that leaves the winter palette — a safety control must not read as calm */
+[data-overlay="report"] .btn-pink,[data-sheetname="safety"] .btn-pink{
+  background:linear-gradient(180deg,#EE7C88,var(--a-alert));color:#2C0509;
+  box-shadow:0 8px 20px -10px rgba(228,96,111,.55);
+}
+[data-overlay="report"] .notice.pink{background:rgba(228,96,111,.09);border-color:rgba(228,96,111,.32)}
+[data-overlay="report"] .notice.pink .i{color:var(--a-alert)}
+.reason.urgent{border-color:rgba(228,96,111,.42);color:#F0949C}
+.cline .ci{color:var(--a-alert)}
+.alertchip{background:rgba(228,96,111,.16)!important;color:var(--a-alert)!important}
+.btn-ghost{background:transparent;color:var(--a-text);border:1px solid rgba(255,255,255,.13);box-shadow:none}
+.btn-ghost:hover{background:var(--a-surf);box-shadow:none}
+.btn-row{display:flex;gap:9px}.btn-row .btn{flex:1}
+.label{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--a-dim-2);margin:22px 0 10px}
+.chipbar{display:flex;gap:7px;overflow-x:auto;padding:0 0 13px;scrollbar-width:none}
+.chipbar::-webkit-scrollbar{display:none}
+.chip{flex:none;font-family:var(--ui);font-size:13px;font-weight:600;padding:7px 13px;border-radius:20px;cursor:pointer;border:1.5px solid var(--a-line);background:transparent;color:var(--a-dim);white-space:nowrap;transition:.15s}
+.chip[aria-pressed="true"]{background:var(--a-text);color:#02122F;border-color:var(--a-text)}
+.tagset{display:flex;gap:6px;flex-wrap:wrap}
+.tg{font-size:11.5px;padding:4px 9px;border-radius:8px;background:var(--a-surf-2);color:var(--a-dim);white-space:nowrap}
+
+.trip{border-radius:26px;overflow:hidden;background:var(--a-surf);border:1px solid rgba(255,255,255,.06);box-shadow:inset 0 1px 0 rgba(255,255,255,.05), 0 16px 34px -20px rgba(0,0,0,.95)}
+.trip-band{background:var(--a-blue);color:#02122F;padding:11px 16px;display:flex;justify-content:space-between;align-items:center;font-family:var(--mono);font-size:10.5px;letter-spacing:.11em;text-transform:uppercase;font-weight:700}
+.trip-main{padding:16px}
+.trip-name{font-family:var(--display);font-size:20px;letter-spacing:-.02em;line-height:1.15}
+.od{display:flex;align-items:flex-start;gap:12px;margin-top:14px}
+.od .pt{flex:none}
+.od .pt .t{font-family:var(--mono);font-size:20px;font-weight:700;font-variant-numeric:tabular-nums}
+.od .pt .p{font-size:12px;color:var(--a-dim-2);margin-top:1px}
+.od .mid{flex:1;padding-top:11px}
+.od .mid .bar{height:2px;background:repeating-linear-gradient(90deg,var(--a-line) 0 4px,transparent 4px 9px)}
+.od .mid .dur{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--a-dim-2);text-align:center;margin-top:5px}
+.od .pt.r{text-align:right}
+.countdown{
+  margin-top:16px;border-radius:19px;padding:15px 17px;display:flex;justify-content:space-between;align-items:center;gap:12px;
+  background:radial-gradient(120% 160% at 0% 0%, rgba(240,236,221,.11) 0%, rgba(240,236,221,0) 58%), var(--a-bg);
+  border:1px solid rgba(255,255,255,.05);
+}
+.countdown .n{font-family:var(--display);font-size:26px;letter-spacing:-.02em;color:var(--a-yellow);line-height:1}
+.countdown .c{font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--a-dim-2);margin-top:5px;white-space:nowrap}
+.countdown .rt{text-align:right}.countdown .rt .n{color:var(--a-text)}
+
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:11px}
+.pcard{background:transparent;border:none;padding:0;cursor:pointer;text-align:left;color:inherit;font:inherit;display:block}
+.pic{position:relative;width:100%;aspect-ratio:4/5;border-radius:21px;overflow:hidden;display:grid;place-items:center;box-shadow:inset 0 0 0 1px rgba(255,255,255,.1), inset 0 22px 40px -22px rgba(255,255,255,.28)}
+.pic .ini{font-family:var(--display);font-size:38px;color:rgba(255,255,255,.9);mix-blend-mode:soft-light}
+.pic .lockchip{position:absolute;top:8px;right:8px;background:rgba(10,8,16,.66);border-radius:20px;padding:3px 8px;font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:#EDE7F5}
+.pic .lockchip.open{background:rgba(147,195,201,.85);color:#02122F}
+.pcard .nm{font-family:var(--display);font-size:16px;letter-spacing:-.015em;margin-top:9px}
+.pcard .bi{font-size:12.5px;line-height:1.4;color:var(--a-dim);margin-top:3px;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+
+.card{
+  background:var(--a-surf);border:1px solid rgba(255,255,255,.055);border-radius:22px;padding:15px;
+  margin-bottom:10px;cursor:pointer;text-align:left;color:inherit;font:inherit;display:block;position:relative;
+  box-shadow:inset 0 1px 0 rgba(255,255,255,.045), 0 8px 22px -14px rgba(0,0,0,.9);
+  transition:background .18s,transform .18s,box-shadow .18s;
+}
+.card:hover{background:var(--a-surf-2);transform:translateY(-1px);box-shadow:inset 0 1px 0 rgba(255,255,255,.07), 0 14px 28px -14px rgba(0,0,0,.95)}
+.card:active{transform:translateY(0)}
+.card.flat{cursor:default}
+.row{display:flex;gap:12px;align-items:flex-start}
+.thumb{width:46px;height:46px;border-radius:14px;flex:none;display:grid;place-items:center;font-family:var(--display);font-size:17px;color:rgba(255,255,255,.92)}
+.who{flex:1;min-width:0}
+.who .nm{font-family:var(--display);font-size:15.5px;letter-spacing:-.01em;display:flex;justify-content:space-between;gap:8px;align-items:baseline}
+.who .nm .ts{font-family:var(--mono);font-size:10px;color:var(--a-dim-2);font-weight:400;flex:none}
+.who .ln{font-size:13.5px;color:var(--a-dim);margin-top:4px;line-height:1.4}
+.expiry{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--a-pink);margin-top:7px}
+.expiry.calm{color:var(--a-dim-2)}
+.expiry.good{color:var(--a-green)}
+
+.plan{display:flex;gap:13px;align-items:flex-start}
+.when{flex:none;width:56px;text-align:center;border-radius:13px;padding:9px 0;background:var(--a-bg);border:1.5px solid var(--a-line)}
+.when .h{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--a-yellow);font-variant-numeric:tabular-nums}
+.when .d{font-family:var(--mono);font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--a-dim-2);margin-top:2px}
+.plan .ti{font-family:var(--display);font-size:15.5px;padding-right:62px}
+.plan .wh{font-size:12.5px;color:var(--a-dim-2);margin-top:3px;padding-right:62px}
+.plan .go{font-size:13px;color:var(--a-dim);margin-top:9px;display:flex;align-items:center;gap:8px}
+.faces{display:flex}
+.faces i{width:23px;height:23px;border-radius:8px;margin-left:-6px;border:2px solid var(--a-surf);display:block}
+.faces i:first-child{margin-left:0}
+.join{position:absolute;top:13px;right:13px;border:1.5px solid var(--a-line);background:transparent;color:var(--a-text);font-family:var(--ui);font-weight:600;font-size:13px;padding:6px 13px;border-radius:18px;cursor:pointer;transition:.15s}
+.join:hover{border-color:var(--a-yellow);color:var(--a-yellow)}
+.join.done{background:var(--a-yellow);border-color:var(--a-yellow);color:#02122F}
+
+.lockbox{background:var(--a-surf);border:1.5px solid var(--a-line);border-radius:18px;padding:6px 15px;margin-top:10px}
+.lf{display:flex;justify-content:space-between;align-items:center;gap:14px;padding:11px 0;border-bottom:1px solid var(--a-line)}
+.lf:last-child{border-bottom:none}
+.lf .k{font-family:var(--mono);font-size:10px;letter-spacing:.11em;text-transform:uppercase;color:var(--a-dim-2);flex:none}
+.lf .v{font-size:14.5px;text-align:right}
+.lf .v.hidden{filter:blur(5.5px);user-select:none;color:var(--a-dim)}
+.lf .v.shown{color:var(--a-green)}
+.notice{display:flex;gap:10px;align-items:flex-start;margin-top:14px;padding:13px 14px;border-radius:16px;background:var(--a-surf);border:1.5px solid var(--a-line)}
+.notice .i{flex:none;font-size:13px;line-height:1.35;color:var(--a-yellow)}
+.notice p{margin:0;font-size:12.8px;color:var(--a-dim);line-height:1.5}
+.notice.pink{background:rgba(139,163,197,.07);border-color:rgba(139,163,197,.28)}
+.notice.pink .i{color:var(--a-pink)}
+.notice.green{background:rgba(147,195,201,.07);border-color:rgba(147,195,201,.28)}
+.notice.green .i{color:var(--a-green)}
+
+/* ---- night-one specific ---- */
+.firstbadge{
+  border-radius:22px;padding:20px 18px 22px;margin-top:12px;text-align:center;
+  background:linear-gradient(160deg,rgba(240,236,221,.14),rgba(139,163,197,.1));
+  border:1.5px solid rgba(240,236,221,.32);
+}
+.firstbadge .n{font-family:var(--display);font-size:44px;line-height:1;color:var(--a-yellow);letter-spacing:-.03em}
+.firstbadge h3{font-family:var(--display);font-size:19px;margin-top:10px}
+.firstbadge p{margin:8px 0 0;font-size:13.5px;color:var(--a-dim);line-height:1.5}
+
+.bigempty{text-align:center;padding:26px 6px 4px}
+.bigempty .em{font-family:var(--display);font-size:23px;line-height:1.15;letter-spacing:-.02em}
+.bigempty p{margin:11px auto 0;font-size:14px;color:var(--a-dim);line-height:1.55;max-width:30ch}
+
+.progress{margin-top:12px}
+.progress .track{height:8px;border-radius:5px;background:var(--a-surf-2);overflow:hidden;display:flex;gap:3px;padding:0}
+.progress .track i{flex:1;background:var(--a-surf-2);display:block;border-radius:5px}
+.progress .track i.lit{background:var(--a-yellow)}
+.progress .cap{font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--a-dim-2);margin-top:8px;display:flex;justify-content:space-between}
+
+.toggle{display:flex;justify-content:space-between;align-items:center;gap:12px;width:100%;padding:14px;background:var(--a-surf);border:1.5px solid var(--a-line);border-radius:18px;cursor:pointer;color:inherit;font:inherit;text-align:left;margin-bottom:10px}
+.toggle .tt{flex:1;min-width:0}
+.toggle .tt b{display:block;font-family:var(--display);font-size:15px;font-weight:400}
+.toggle .tt span{display:block;font-size:12.5px;color:var(--a-dim);margin-top:3px;line-height:1.4}
+.sw{width:40px;height:23px;border-radius:13px;background:var(--a-surf-2);border:1.5px solid var(--a-line);position:relative;flex:none;transition:.18s}
+.sw::after{content:"";position:absolute;top:2px;left:2px;width:16px;height:16px;border-radius:50%;background:var(--a-dim-2);transition:.18s}
+.toggle[aria-pressed="true"] .sw{background:var(--a-green);border-color:var(--a-green)}
+.toggle[aria-pressed="true"] .sw::after{left:19px;background:#02122F}
+
+.qrwrap{background:#FFFFFF;border-radius:20px;padding:16px;display:grid;place-items:center;margin:4px auto 0;width:196px}
+.qrwrap svg{display:block;width:164px;height:164px}
+.offbadge{display:inline-flex;align-items:center;gap:7px;font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--a-green);background:rgba(147,195,201,.1);border:1.5px solid rgba(147,195,201,.28);border-radius:20px;padding:5px 11px}
+
+.halt{display:flex;gap:13px;align-items:flex-start;padding:15px 0;border-bottom:1px solid var(--a-line)}
+.halt:last-child{border-bottom:none}
+.halt .tm{flex:none;width:52px}
+.halt .tm .h{font-family:var(--mono);font-size:14px;font-weight:700;color:var(--a-yellow);font-variant-numeric:tabular-nums}
+.halt .tm .d{font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;color:var(--a-dim-2);margin-top:2px}
+.halt .st{flex:1;min-width:0}
+.halt .st .n{font-family:var(--display);font-size:15.5px}
+.halt .st .c{font-family:var(--mono);font-size:9.5px;letter-spacing:.11em;text-transform:uppercase;color:var(--a-dim-2);margin-top:2px}
+.halt .st .tip{font-size:13px;color:var(--a-dim);margin-top:6px;line-height:1.45}
+
+/* tabs — floating pill, detached from the edge */
+.tabbar{
+  position:absolute;left:14px;right:14px;bottom:16px;z-index:8;display:flex;gap:2px;padding:7px 7px;
+  background:rgba(24,48,79,.72);backdrop-filter:blur(20px) saturate(1.4);-webkit-backdrop-filter:blur(20px) saturate(1.4);
+  border:1px solid rgba(255,255,255,.09);border-radius:26px;
+  box-shadow:0 12px 34px -8px rgba(0,0,0,.66), inset 0 1px 0 rgba(255,255,255,.07);
+}
+.tab{
+  flex:1;background:none;border:none;cursor:pointer;color:var(--a-dim-2);position:relative;z-index:1;
+  display:flex;flex-direction:column;align-items:center;gap:4px;padding:8px 0 7px;border-radius:20px;
+  font-family:var(--ui);font-weight:600;font-size:10px;letter-spacing:.01em;transition:color .18s,background .18s;
+}
+.tab svg{width:21px;height:21px;stroke:currentColor;fill:none;stroke-width:1.9;stroke-linecap:round;stroke-linejoin:round}
+.tab:hover{color:var(--a-dim)}
+.tab[aria-selected="true"]{color:var(--a-yellow);background:rgba(240,236,221,.13)}
+.tab .dot{position:absolute;top:5px;left:calc(50% + 8px);width:7px;height:7px;border-radius:50%;background:var(--a-pink);box-shadow:0 0 0 2px rgba(24,48,79,.9)}
+.tab .dot.hide{display:none}
+
+/* overlays */
+.sheet{position:absolute;inset:0;background:rgba(6,4,12,.66);display:flex;align-items:flex-end;border-radius:36px;opacity:0;pointer-events:none;transition:opacity .22s;z-index:10}
+.sheet.on{opacity:1;pointer-events:auto}
+.sheet-in{width:100%;max-height:90%;background:var(--a-bg);border-radius:30px 30px 36px 36px;padding:8px 20px 24px;overflow-y:auto;transform:translateY(26px);transition:transform .34s cubic-bezier(.28,1.28,.44,1);border-top:1px solid rgba(255,255,255,.09);box-shadow:0 -20px 50px -20px rgba(0,0,0,.9)}
+.sheet.on .sheet-in{transform:none}
+.sheet-in::-webkit-scrollbar{width:5px}.sheet-in::-webkit-scrollbar-thumb{background:var(--a-line);border-radius:3px}
+.grab{width:40px;height:4px;border-radius:3px;background:var(--a-line);margin:6px auto 15px}
+.overlay{position:absolute;inset:0;background:var(--a-bg);border-radius:36px;display:flex;flex-direction:column;z-index:12;transform:translateX(100%);transition:transform .3s cubic-bezier(.32,1.15,.42,1)}
+.overlay.on{transform:none}
+.ovhead{flex:none;display:flex;align-items:center;gap:11px;padding:18px 16px 13px;border-bottom:1.5px solid var(--a-line)}
+.back{background:none;border:none;color:var(--a-text);font-size:24px;cursor:pointer;padding:0 4px;line-height:1}
+.ovhead .t{font-family:var(--display);font-size:16px}
+.ovhead .s{font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--a-dim-2);margin-top:2px}
+.ovbody{flex:1;overflow-y:auto;padding:16px 20px 22px}
+.ovbody::-webkit-scrollbar{width:5px}.ovbody::-webkit-scrollbar-thumb{background:var(--a-line);border-radius:3px}
+
+.msgs{flex:1;overflow-y:auto;padding:16px 18px 8px;display:flex;flex-direction:column;gap:9px}
+.msgs > :first-child{margin-top:auto}
+.msgs::-webkit-scrollbar{width:5px}.msgs::-webkit-scrollbar-thumb{background:var(--a-line);border-radius:3px}
+.sys{align-self:center;text-align:center;font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--a-dim-2);padding:6px 0;max-width:84%;line-height:1.7}
+.bub{max-width:76%;padding:10px 14px;border-radius:19px;font-size:14.5px;line-height:1.45}
+.bub.them{align-self:flex-start;background:var(--a-surf);border-bottom-left-radius:6px}
+.bub.me{align-self:flex-end;background:var(--a-yellow);color:#02122F;border-bottom-right-radius:6px}
+.bub.queued{background:var(--a-surf-2);color:var(--a-dim);border:1.5px dashed var(--a-line)}
+.bub .st{display:block;font-family:var(--mono);font-size:9px;letter-spacing:.08em;text-transform:uppercase;margin-top:5px;opacity:.75}
+.offbar{flex:none;display:flex;align-items:center;gap:8px;padding:8px 18px;background:rgba(240,236,221,.1);border-bottom:1px solid rgba(240,236,221,.22);font-family:var(--mono);font-size:9.5px;letter-spacing:.09em;text-transform:uppercase;color:var(--a-yellow)}
+.offbar span:first-child{width:6px;height:6px;border-radius:50%;background:var(--a-yellow);flex:none}
+.quickbar{display:flex;gap:7px;padding:6px 18px 10px;overflow-x:auto;scrollbar-width:none}
+.quickbar::-webkit-scrollbar{display:none}
+.composer{flex:none;display:flex;gap:9px;align-items:center;padding:10px 16px 16px;border-top:1.5px solid var(--a-line)}
+.fakein{flex:1;background:var(--a-surf);border-radius:22px;padding:11px 15px;color:var(--a-dim-2);font-size:14px}
+.send{width:38px;height:38px;border-radius:50%;background:var(--a-yellow);border:none;color:#02122F;font-size:16px;cursor:pointer;flex:none}
+
+.qroom{position:absolute;inset:0;border-radius:36px;z-index:14;display:flex;flex-direction:column;background:var(--a-pink);color:#02122F;padding:26px 24px 24px;transform:translateY(100%);transition:transform .3s ease}
+.qroom.on{transform:none}
+.qtop{display:flex;justify-content:space-between;align-items:flex-start;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase}
+.qtop .x{background:none;border:none;font-size:23px;line-height:1;cursor:pointer;color:inherit;padding:0}
+.qmid{flex:1;display:flex;flex-direction:column;justify-content:center;gap:18px}
+.qtext{font-family:var(--display);font-size:29px;line-height:1.12;letter-spacing:-.025em;text-wrap:balance}
+.qno{font-family:var(--mono);font-size:11px;letter-spacing:.16em;text-transform:uppercase;opacity:.6}
+.qbot{display:flex;flex-direction:column;gap:11px}
+.qwait{font-family:var(--mono);font-size:11px;letter-spacing:.1em;text-transform:uppercase;opacity:.72}
+.qbtn{width:100%;padding:14px;border-radius:16px;border:2px solid #02122F;background:transparent;color:#02122F;font-family:var(--display);font-size:15px;cursor:pointer;transition:.15s}
+.qbtn:hover{background:#02122F;color:var(--a-pink)}
+
+/* first-run tour */
+.tour{position:absolute;inset:0;border-radius:36px;z-index:18;display:none}
+.tour.on{display:block}
+.tourhole{
+  position:absolute;border-radius:22px;pointer-events:none;
+  box-shadow:0 0 0 9999px rgba(6,4,12,.84), inset 0 0 0 2px var(--a-yellow);
+  transition:top .38s cubic-bezier(.3,1.2,.45,1),left .38s cubic-bezier(.3,1.2,.45,1),width .38s cubic-bezier(.3,1.2,.45,1),height .38s cubic-bezier(.3,1.2,.45,1);
+}
+.tourcard{
+  position:absolute;left:16px;right:16px;background:var(--a-text);color:#02122F;border-radius:24px;padding:17px 18px 15px;
+  box-shadow:0 20px 44px -14px rgba(0,0,0,.8);transition:top .38s cubic-bezier(.3,1.2,.45,1);
+}
+.tourcard .tn{font-family:var(--mono);font-size:9.5px;letter-spacing:.15em;text-transform:uppercase;color:#7C8CA8}
+.tourcard b{display:block;font-family:var(--display);font-size:18px;letter-spacing:-.02em;margin-top:6px}
+.tourcard p{margin:7px 0 0;font-size:13.5px;line-height:1.5;color:#3D5578}
+.tourbtns{display:flex;gap:9px;margin-top:14px}
+.tourbtns button{
+  flex:1;padding:11px;border-radius:14px;border:none;cursor:pointer;font-family:var(--display);font-size:14px;
+}
+.tourbtns .skip{background:transparent;color:#7C8CA8;flex:0 0 auto;padding:11px 14px}
+.tourbtns .next{background:#02122F;color:var(--a-yellow)}
+
+/* report */
+.rstep{display:none}
+.rstep.on{display:block}
+.reason{
+  display:block;width:100%;text-align:left;margin-bottom:8px;padding:15px;border-radius:16px;cursor:pointer;
+  background:var(--a-surf);border:1.5px solid var(--a-line);color:var(--a-text);
+  font-family:var(--ui);font-size:14.5px;transition:.15s;
+}
+.reason:hover{border-color:#463D5E;background:var(--a-surf-2)}
+.reason.urgent{border-color:rgba(139,163,197,.36);color:#FF88AC}
+.conf{display:flex;flex-direction:column;gap:2px}
+.cline{display:flex;gap:12px;align-items:flex-start;background:var(--a-surf);padding:13px 14px;border-radius:14px}
+.cline .ci{color:var(--a-pink);flex:none;font-size:13px;padding-top:2px}
+.cline b{display:block;font-family:var(--display);font-size:14.5px;font-weight:400;letter-spacing:-.01em}
+.cline span:not(.ci){display:block;font-size:12.5px;color:var(--a-dim);line-height:1.45;margin-top:3px}
+
+/* someone joins */
+.joinseq{position:absolute;inset:0;border-radius:36px;z-index:22;display:none}
+.joinseq.on{display:block}
+.beat{position:absolute;inset:0;border-radius:36px;display:none;flex-direction:column}
+.beat.on{display:flex}
+.lock{flex:1;display:flex;flex-direction:column;justify-content:center;background:var(--a-bg);border-radius:36px;padding:26px 22px 24px}
+.lockclock{text-align:center;margin-bottom:30px}
+.lockclock .t{font-family:var(--display);font-size:62px;letter-spacing:-.04em;line-height:1}
+.lockclock .d{font-family:var(--mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--a-dim-2);margin-top:8px}
+.pushcard{background:rgba(255,255,255,.09);border:1px solid rgba(255,255,255,.12);border-radius:20px;padding:14px 15px}
+.pushhead{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.appicon{width:19px;height:19px;border-radius:5px;background:var(--a-pink);color:#02122F;font-family:var(--display);font-size:11px;display:grid;place-items:center;flex:none}
+.appname{font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--a-dim);flex:1}
+.pushtime{font-family:var(--mono);font-size:10px;color:var(--a-dim-2)}
+.pushtitle{font-family:var(--display);font-size:16px;letter-spacing:-.01em}
+.pushbody{font-size:13.5px;color:var(--a-dim);line-height:1.45;margin-top:4px}
+.lockfoot{margin-top:auto;padding-top:26px}
+.lockfine{font-size:11.5px;color:var(--a-dim-2);line-height:1.5;margin:12px 0 0;text-align:center}
+.beatbtn{width:100%;padding:15px;border-radius:16px;border:none;cursor:pointer;font-family:var(--display);font-size:15.5px;background:var(--a-yellow);color:#02122F;transition:filter .15s}
+.beatbtn:hover{filter:brightness(1.06)}
+.beatbtn.dark{background:#02122F;color:var(--a-yellow)}
+
+.moment{flex:1;display:flex;flex-direction:column;background:var(--a-yellow);color:#02122F;border-radius:36px;padding:26px 24px 24px}
+.mtop{display:flex;justify-content:space-between;font-family:var(--mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;opacity:.65}
+.mmid{flex:1;display:flex;flex-direction:column;justify-content:center;gap:24px}
+.mbig{font-family:var(--display);font-size:31px;line-height:1.08;letter-spacing:-.03em;text-wrap:balance}
+.mcard{display:flex;gap:14px;align-items:center;background:rgba(2,18,47,.1);border-radius:20px;padding:14px}
+.mname{font-family:var(--display);font-size:21px;letter-spacing:-.02em}
+.mbio{margin:6px 0 0;font-size:13.5px;line-height:1.45;opacity:.8}
+.mbot{display:flex;flex-direction:column}
+.mfine{margin:12px 0 0;text-align:center;font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase;opacity:.65}
+
+.changed{margin-top:20px;display:flex;flex-direction:column;gap:2px}
+.ch{display:flex;gap:12px;align-items:flex-start;background:var(--a-surf);padding:13px 14px;border-radius:14px}
+.ch .cn{font-family:var(--mono);font-size:10px;letter-spacing:.1em;color:var(--a-yellow);flex:none;padding-top:2px}
+.ch b{display:block;font-family:var(--display);font-size:14.5px;font-weight:400;letter-spacing:-.01em}
+.ch span:not(.cn){display:block;font-size:12.5px;color:var(--a-dim);line-height:1.45;margin-top:3px}
+
+/* onboarding */
+.flow{position:absolute;inset:0;border-radius:36px;z-index:20;background:var(--a-bg);display:none;flex-direction:column}
+.flow.on{display:flex}
+.flowtop{flex:none;display:flex;align-items:center;gap:12px;padding:16px 20px 10px}
+.flowtop .bk{background:none;border:none;color:var(--a-dim);font-size:23px;line-height:1;cursor:pointer;padding:0 2px;visibility:hidden}
+.flowtop .bk.show{visibility:visible}
+.dots{display:flex;gap:6px;flex:1}
+.dots i{height:3px;flex:1;border-radius:2px;background:var(--a-line);display:block;transition:background .2s}
+.dots i.done{background:var(--a-yellow)}
+.flowbody{flex:1;overflow-y:auto;padding:14px 22px 20px;display:flex;flex-direction:column}
+.flowbody::-webkit-scrollbar{width:5px}.flowbody::-webkit-scrollbar-thumb{background:var(--a-line);border-radius:3px}
+.step{display:none;flex:1;flex-direction:column}
+.step.on{display:flex}
+.step h3{font-family:var(--display);font-size:27px;letter-spacing:-.025em;line-height:1.1}
+.step .sub{font-size:14px;color:var(--a-dim);margin-top:9px;line-height:1.5}
+.step .pushdown{margin-top:auto;padding-top:22px}
+.fine{font-size:11.5px;color:var(--a-dim-2);line-height:1.5;margin-top:12px;text-align:center}
+/* fills the space the language picker used to hold, in the app's own voice */
+.welcomeline{flex:1;display:flex;align-items:center;padding:26px 0 8px}
+.welcomeline p{
+  margin:0;font-size:17px;line-height:1.45;color:var(--a-dim);
+  border-left:3px solid var(--a-pink);padding-left:15px;text-wrap:balance;
+}
+.gbtn{display:flex;align-items:center;justify-content:center;gap:11px;width:100%;padding:15px;border-radius:16px;border:none;cursor:pointer;background:#FFFFFF;color:#1B1B1F;font-family:var(--ui);font-weight:600;font-size:15.5px}
+.gbtn .g{width:20px;height:20px;flex:none}
+.dob{display:flex;gap:9px;margin-top:22px}
+.dob div{flex:1;background:var(--a-surf);border:1.5px solid var(--a-line);border-radius:14px;padding:14px 10px;text-align:center}
+.dob div.yr{flex:1.5}
+.dob .k{font-family:var(--mono);font-size:9px;letter-spacing:.14em;text-transform:uppercase;color:var(--a-dim-2)}
+.dob .v{font-family:var(--display);font-size:24px;margin-top:5px}
+.agebadge{margin-top:16px;display:inline-flex;align-items:center;gap:8px;padding:9px 14px;border-radius:20px;background:rgba(147,195,201,.1);border:1.5px solid rgba(147,195,201,.3);color:var(--a-green);font-family:var(--mono);font-size:10.5px;letter-spacing:.1em;text-transform:uppercase}
+.mepic{width:104px;aspect-ratio:4/5;border-radius:20px;background:linear-gradient(145deg,#A8BEDC,#23354D);display:grid;place-items:center;flex:none;position:relative}
+.mepic .ini{font-family:var(--display);font-size:36px;color:rgba(255,255,255,.9);mix-blend-mode:soft-light}
+.mepic .edit{position:absolute;bottom:-9px;left:50%;transform:translateX(-50%);background:var(--a-surf-2);border:1.5px solid var(--a-line);border-radius:20px;padding:4px 11px;font-family:var(--mono);font-size:9px;letter-spacing:.09em;text-transform:uppercase;color:var(--a-dim);white-space:nowrap}
+.fld{margin-top:16px}
+.fld .k{font-family:var(--mono);font-size:9.5px;letter-spacing:.14em;text-transform:uppercase;color:var(--a-dim-2);margin-bottom:6px}
+.fld .v{background:var(--a-surf);border:1.5px solid var(--a-line);border-radius:14px;padding:13px 15px;font-size:15px}
+.fld .v.area{min-height:78px;line-height:1.5}
+.counter{font-family:var(--mono);font-size:9.5px;letter-spacing:.1em;text-transform:uppercase;color:var(--a-dim-2);text-align:right;margin-top:6px}
+.bigdone{flex:1;display:flex;flex-direction:column;justify-content:center;align-items:center;text-align:center;gap:14px}
+.bigdone .tick{width:64px;height:64px;border-radius:50%;background:var(--a-green);color:#02122F;display:grid;place-items:center;font-size:30px;font-family:var(--display)}
+.bigdone h3{font-size:30px}
+.bigdone p{margin:0;color:var(--a-dim);font-size:14.5px;max-width:26ch;line-height:1.5}
+
+/* ================= notes ================= */
+.notes{position:sticky;top:32px}
+@media(max-width:920px){.notes{position:static}}
+.ncard{background:var(--panel);border:2px solid var(--ink);border-radius:4px;padding:22px 22px 24px}
+.nkick{font-family:var(--mono);font-size:10px;letter-spacing:.15em;text-transform:uppercase;color:var(--accent);margin-bottom:8px}
+.ncard h3{font-size:23px;margin-bottom:9px}
+.ncard p{margin:0;font-size:15.5px;line-height:1.6;color:var(--ink-2)}
+.nlist{list-style:none;padding:0;margin:15px 0 0;border-top:1.5px solid var(--line);padding-top:14px}
+.nlist li{display:flex;gap:10px;font-size:14.5px;line-height:1.5;color:var(--ink-2);padding:6px 0}
+.nlist li::before{content:"";flex:none;width:8px;height:8px;background:var(--accent-vivid);margin-top:8px}
+
+/* ================= sections ================= */
+.sec{padding:60px 0;border-top:2px solid var(--ink)}
+.sec h2{font-size:34px;margin-top:8px;max-width:24ch}
+.sec .intro{max-width:62ch;margin-top:16px;color:var(--ink-2)}
+.ptable{display:grid;grid-template-columns:1fr 1fr;gap:22px;margin-top:32px}
+@media(max-width:760px){.ptable{grid-template-columns:1fr}}
+.pcol{border:2px solid var(--ink);border-radius:4px;overflow:hidden;background:var(--panel)}
+.pcol h4{padding:15px 20px;font-size:18px;color:var(--ground);background:var(--ink)}
+.pcol.open h4{background:var(--accent-vivid);color:#02122F}
+.pcol ul{list-style:none;margin:0;padding:8px 20px 18px}
+.pcol li{padding:9px 0;border-bottom:1px solid var(--line-soft);font-size:15.5px;color:var(--ink-2)}
+.pcol li:last-child{border-bottom:none}
+.pcol li b{color:var(--ink);font-weight:600}
+
+/* data tables + lifecycle */
+.costwrap{overflow-x:auto;margin-top:30px}
+.dt{width:100%;border-collapse:collapse;font-size:15px}
+.dt th,.dt td{text-align:left;padding:14px 16px;border-bottom:1px solid var(--line);vertical-align:top}
+.dt thead th{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);border-bottom:2px solid var(--ink);white-space:nowrap}
+.dt td:first-child{font-family:var(--mono);font-size:13.5px;color:var(--ink);width:16%;white-space:nowrap}
+.dt td:nth-child(2){color:var(--ink-2)}
+.dt td:last-child{font-family:var(--mono);font-size:13px;color:var(--accent);white-space:nowrap;width:20%}
+.dt td.keep{color:var(--green)}
+.dt tbody tr:last-child td{border-bottom:2px solid var(--ink)}
+@media(max-width:700px){.dt{min-width:640px}}
+code{font-family:var(--mono);font-size:.88em;background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:1px 5px}
+
+.life{display:grid;grid-template-columns:repeat(auto-fit,minmax(215px,1fr));gap:0;margin-top:26px}
+.lstep{padding:20px 22px 22px 0;border-top:2px solid var(--line);position:relative;padding-right:26px}
+.lstep::before{content:"";position:absolute;top:-2px;left:0;width:38px;height:2px;background:var(--accent-vivid)}
+.lstep.last::before{background:var(--green)}
+.lstep .ln{font-family:var(--mono);font-size:11px;letter-spacing:.1em;color:var(--accent);display:block;margin-bottom:7px}
+.lstep b{display:block;font-family:var(--display);font-size:16px;font-weight:900;letter-spacing:-.01em;margin-bottom:6px}
+.lstep span:not(.ln){display:block;font-size:14px;line-height:1.5;color:var(--ink-2)}
+
+.plays{display:grid;grid-template-columns:repeat(auto-fit,minmax(320px,1fr));gap:2px;background:var(--ink);border:2px solid var(--ink);margin-top:30px}
+.play{background:var(--panel);padding:24px 24px 26px;display:flex;flex-direction:column}
+.play .n{font-family:var(--mono);font-size:10.5px;letter-spacing:.14em;color:var(--accent);margin-bottom:9px}
+.play h4{font-size:19px;line-height:1.22;margin-bottom:10px}
+.play p{margin:0;font-size:14.5px;line-height:1.55;color:var(--ink-2)}
+.play .do{margin-top:auto;padding-top:13px}
+.play .do b{display:block;font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--accent);margin-bottom:4px;margin-top:13px;border-top:1.5px solid var(--line);padding-top:13px}
+.play .do span{font-size:14px;color:var(--ink-2);line-height:1.5}
+
+.warn{margin-top:30px;border:2px solid var(--accent-vivid);border-radius:4px;background:var(--panel);padding:24px}
+.warn h4{font-size:20px;color:var(--accent);margin-bottom:10px}
+.warn p{margin:0;font-size:15.5px;line-height:1.6;color:var(--ink-2);max-width:70ch}
+
+.settled{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:2px;background:var(--ink);border:2px solid var(--ink);margin-top:28px}
+.scell{background:var(--panel);padding:19px 20px 21px}
+.scell .k{font-family:var(--mono);font-size:10px;letter-spacing:.14em;text-transform:uppercase;color:var(--ink-3);margin-bottom:7px}
+.scell .d{font-family:var(--display);font-size:16px;line-height:1.25}
+.scell .d::before{content:"✓ ";color:var(--accent-vivid)}
+.scell p{margin:8px 0 0;font-size:13.5px;line-height:1.5;color:var(--ink-2)}
+
+.foot{border-top:2px solid var(--ink);padding:24px 0 56px;font-family:var(--mono);font-size:11px;color:var(--ink-3);letter-spacing:.04em}
+@media(prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+
+/* ================= display face =================
+   Jangkuy is a statement face and caps-only, so it's set uppercase deliberately rather than
+   by accident. It carries the wordmark, screen titles, big numbers and the poster screens.
+   Card names, buttons and labels stay on the normal grotesque — a person's name in wide caps
+   would stop the Onboard list from being readable. */
+.mark,.tagline,.sec h2,.apphead h2,.trip-name,.countdown .n,.firstbadge .n,.firstbadge h3,
+.bigempty .em,.qtext,.mbig,.lockclock .t,.step h3,.bigdone h3,.mname,.lstep b{
+  font-family:var(--wide);
+  font-weight:900;
+  text-transform:uppercase;
+}
+/* a wide chunky face needs air, not the negative tracking a condensed grotesque wanted */
+.tagline,.sec h2,.qtext,.mbig{letter-spacing:.004em;line-height:1.12}
+.mark{letter-spacing:.002em}
+.bigempty .em,.step h3,.bigdone h3,.firstbadge h3{letter-spacing:.008em;line-height:1.14}
+.trip-name,.mname,.lstep b{letter-spacing:.012em}
+.countdown .n,.firstbadge .n,.lockclock .t{letter-spacing:.006em}
+.apphead h2{letter-spacing:.016em;font-size:24px}
+/* caps in a heavy wide face read larger than lowercase did — pull the big sizes back */
+.tagline{font-size:clamp(24px,3.9vw,40px)}
+.sec h2{font-size:29px}
+.qtext{font-size:25px}
+.mbig{font-size:27px}
+.bigempty .em{font-size:20px}
+.step h3{font-size:24px}
+.trip-name{font-size:16px}
+</style>
+
+
+<header class="hero">
+  <div class="wrap">
+    <div class="mark">Saf<em>ar</em></div>
+    <div class="hero-strip">
+      <span class="hl">v1.0</span>
+      <span>Lucknow ⇄ Delhi</span>
+      <span>Offline first</span>
+      <span>18+</span>
+    </div>
+
+    <div class="tagline">The first night, <i>nobody else is there.</i></div>
+
+    <p class="lede">
+      That's the real launch condition, so it's built as a proper screen rather than an apology.
+      <b>An empty train has to be worth opening anyway</b> — a countdown, a halt guide that works with no
+      signal, something to read, and one obvious way to turn the person across the aisle into user number two.
+    </p>
+
+    <div class="forwho">
+      <div class="k">Three states, one phone</div>
+      <p>
+        Switch between <b>Sign up</b>, <b>Night one</b> (you're the only person aboard) and
+        <b>Inside the app</b> (eighteen people aboard) using the control above the phone. Night one
+        is the new one.
+      </p>
+    </div>
+  </div>
+</header>
+
+<section class="proto">
+  <div class="wrap">
+    <div class="proto-head">
+      <div>
+        <div class="eyebrow">The prototype</div>
+        <h2 style="font-size:34px;margin-top:8px">Tap through it</h2>
+      </div>
+      <div class="hint">In night one, try <b>invite</b>, <b>the halt guide</b>, <b>adda</b></div>
+    </div>
+
+    <div class="proto-grid">
+      <div class="stage">
+        <div class="modes">
+          <button id="mSignup" aria-pressed="false">Sign up</button>
+          <button id="mEmpty" aria-pressed="true">Night one</button>
+          <button id="mJoin" aria-pressed="false">Someone joins</button>
+          <button id="mOff" aria-pressed="false">Off route</button>
+          <button id="mApp" aria-pressed="false">Busy train</button>
+          <button id="mTour" aria-pressed="false">First run</button>
+        </div>
+
+        <div class="phone">
+          <div class="screen">
+
+            <div class="statusbar">
+              <span>21:26</span>
+              <span class="sb-r">4G <span class="sb-bat"></span></span>
+            </div>
+
+            <!-- ================= ONBOARDING ================= -->
+            <div class="flow" id="flow">
+              <div class="flowtop">
+                <button class="bk" id="flowBack" aria-label="Back">‹</button>
+                <div class="dots" id="dots"><i class="done"></i><i></i><i></i><i></i><i></i></div>
+              </div>
+              <div class="flowbody">
+                <div class="step on" data-step="0">
+                  <div style="font-family:var(--wide);font-weight:900;font-size:40px;letter-spacing:.002em;text-transform:uppercase;line-height:.92">Saf<span style="color:var(--a-pink)">ar</span></div>
+                  <div class="sub">For people going home, and people going back.</div>
+
+                  <div class="welcomeline">
+                    <p>“Everyone on this train is going somewhere they're nervous about. Including you.”</p>
+                  </div>
+
+                  <div class="pushdown">
+                    <button class="gbtn" data-next>
+                      <svg class="g" viewBox="0 0 48 48"><path fill="#4285F4" d="M45 24.5c0-1.6-.1-2.7-.4-4H24v7.3h12c-.2 2-1.5 5-4.4 7l6.7 5.2c4-3.7 6.7-9.1 6.7-15.5z"/><path fill="#34A853" d="M24 46c5.9 0 10.9-2 14.5-5.3l-6.9-5.4c-1.9 1.3-4.4 2.2-7.6 2.2-5.8 0-10.7-3.8-12.5-9.1l-7.1 5.5C8 41.2 15.4 46 24 46z"/><path fill="#FBBC05" d="M11.5 28.4c-.5-1.4-.7-2.9-.7-4.4s.3-3 .7-4.4l-7.1-5.5C2.9 17 2 20.4 2 24s.9 7 2.4 9.9l7.1-5.5z"/><path fill="#EA4335" d="M24 10.6c3.3 0 5.5 1.4 6.7 2.6l5.9-5.8C33 4 29.9 2 24 2 15.4 2 8 6.8 4.4 14.1l7.1 5.5c1.8-5.3 6.7-9 12.5-9z"/></svg>
+                      <span>Continue with Google</span>
+                    </button>
+                    <p class="fine">We take your name and photo. Nothing is ever posted anywhere, and we never ask for a password.</p>
+                  </div>
+                </div>
+                <div class="step" data-step="1">
+                  <h3>When were you born?</h3>
+                  <div class="sub">Safar is only for people over 18. We ask once, and your age is never shown to anyone.</div>
+                  <div class="dob">
+                    <div><div class="k">Day</div><div class="v">07</div></div>
+                    <div><div class="k">Month</div><div class="v">03</div></div>
+                    <div class="yr"><div class="k">Year</div><div class="v">2006</div></div>
+                  </div>
+                  <div><span class="agebadge">19 years old · you're in</span></div>
+                  <div class="pushdown"><button class="btn" data-next>Continue</button></div>
+                </div>
+                <div class="step" data-step="2">
+                  <h3>This is all anyone sees</h3>
+                  <div class="sub">Your face, your first name, and two lines. Nothing else until you both unlock.</div>
+                  <div style="display:flex;gap:16px;align-items:flex-start;margin-top:20px">
+                    <div class="mepic"><span class="ini">A</span><span class="edit">Change</span></div>
+                    <div style="flex:1;min-width:0">
+                      <div class="fld" style="margin-top:0"><div class="k">First name</div><div class="v">Aditi</div></div>
+                    </div>
+                  </div>
+                  <div class="fld">
+                    <div class="k">Two lines about you</div>
+                    <div class="v area">Third year, going home to Lucknow for the first time since June. I will absolutely share my food.</div>
+                    <div class="counter">98 / 140</div>
+                  </div>
+                  <div class="pushdown"><button class="btn" data-next>Continue</button></div>
+                </div>
+                <div class="step" data-step="3">
+                  <h3>Which train?</h3>
+                  <div class="sub">Paste your booking message. It's read on your phone and never sent anywhere.</div>
+                  <div class="chipbar" style="margin-top:18px">
+                    <button class="chip" aria-pressed="true">Train</button>
+                    <button class="chip" aria-pressed="false">Bus</button>
+                  </div>
+                  <div class="fld" style="margin-top:2px">
+                    <div class="k">Pasted from messages</div>
+                    <div class="v area" style="font-family:var(--mono);font-size:11.5px;line-height:1.55;color:var(--a-dim)">PNR:8412605397 TRN:12229 DOJ:14-08-26 SL LKO-NDLS S6 42 DEP:22:00</div>
+                  </div>
+                  <div class="lockbox">
+                    <div class="lf"><span class="k">Train</span><span class="v">12229 Lucknow Mail</span></div>
+                    <div class="lf"><span class="k">Date</span><span class="v">Fri 14 Aug</span></div>
+                    <div class="lf"><span class="k">Route</span><span class="v">LKO → NDLS</span></div>
+                    <div class="lf"><span class="k">Coach</span><span class="v" style="color:var(--a-dim-2)">S6 · never shown</span></div>
+                  </div>
+                  <div class="notice">
+                    <span class="i">◆</span>
+                    <p>Parsed on the device, so it costs nothing and works with no signal. Type the train number instead if you'd rather.</p>
+                  </div>
+                  <div class="pushdown"><button class="btn" data-next>Add journey</button></div>
+                </div>
+                <div class="step" data-step="4">
+                  <div class="bigdone">
+                    <div class="tick">✓</div>
+                    <h3>You're on 12229</h3>
+                    <p>You're the first person on this train tonight. That happens, and it's fixable.</p>
+                  </div>
+                  <div class="pushdown">
+                    <button class="btn" id="enterApp">Go</button>
+                    <p class="fine">Four screens, two taps, no password. That was the whole sign-up.</p>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= NIGHT ONE : TRIP ================= -->
+            <div class="pane on" data-pane="trip" data-variant="empty">
+              <div class="apphead">
+                <h2>Your safar</h2>
+                <div class="sub">Friday, 14 August</div>
+              </div>
+              <div class="body">
+                <div class="trip">
+                  <div class="trip-band"><span>Sleeper · S6</span><span>40 min late</span></div>
+                  <div class="trip-main">
+                    <div class="trip-name">12229 Lucknow Mail</div>
+                    <div class="od">
+                      <div class="pt"><div class="t">22:00</div><div class="p">Lucknow</div></div>
+                      <div class="mid"><div class="bar"></div><div class="dur">8h 35m</div></div>
+                      <div class="pt r"><div class="t">06:35</div><div class="p">New Delhi</div></div>
+                    </div>
+                    <div class="countdown">
+                      <div><div class="n">34 min</div><div class="c">Till departure</div></div>
+                      <div class="rt"><div class="n">1</div><div class="c">Just you</div></div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="firstbadge">
+                  <div class="n">01</div>
+                  <h3>First aboard 12229</h3>
+                  <p>Nobody else on this train has Safar yet. Every train starts this way, and it takes one person to fix it — usually the one already holding the phone.</p>
+                </div>
+
+                <button class="btn btn-pink" style="margin-top:12px" data-sheet="invite">Get someone else on</button>
+
+                <div class="label">Worth opening anyway</div>
+
+                <div class="card" role="button" tabindex="0" data-halts>
+                  <div class="row">
+                    <div class="thumb" style="background:var(--a-surf-2);color:var(--a-yellow)">◷</div>
+                    <div class="who">
+                      <div class="nm">Tonight's halts</div>
+                      <div class="ln">Six stops between here and Delhi, how long each one is, and what's worth getting off for.</div>
+                      <div class="expiry good">Works with no signal</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card" role="button" tabindex="0" data-qroom>
+                  <div class="row">
+                    <div class="thumb" style="background:linear-gradient(140deg,#8BA3C5,#2A4062)">“</div>
+                    <div class="who">
+                      <div class="nm">Waiting room</div>
+                      <div class="ln">Something to read while the platform fills up.</div>
+                    </div>
+                  </div>
+                </div>
+
+                <button class="toggle" aria-pressed="true" data-toggle>
+                  <span class="tt">
+                    <b>Tell me the moment someone joins</b>
+                    <span>One buzz, whenever the second person adds this train.</span>
+                  </span>
+                  <span class="sw"></span>
+                </button>
+
+                <div class="notice green">
+                  <span class="i">◆</span>
+                  <p>We will never invent people to make this look busier. On a train you can just look around and check — one fake profile would end the whole thing.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= NIGHT ONE : ONBOARD ================= -->
+            <div class="pane" data-pane="onboard" data-variant="empty">
+              <div class="apphead">
+                <h2>Onboard</h2>
+                <div class="sub">12229 · nobody else yet</div>
+              </div>
+              <div class="body">
+                <div class="bigempty">
+                  <div class="em">You're the only one on tonight's train.</div>
+                  <p>Which makes you the reason there'll be a second. The person across the aisle is holding a phone too.</p>
+                </div>
+
+                <button class="btn btn-pink" style="margin-top:18px" data-sheet="invite">Show someone the code</button>
+
+                <div class="label">On this route, though</div>
+
+                <div class="card" role="button" tabindex="0" data-sheet="invite">
+                  <div class="row">
+                    <div class="thumb" style="background:var(--a-surf-2);color:var(--a-blue)">12229</div>
+                    <div class="who">
+                      <div class="nm">Sunday's 12229 <span class="ts">24 Aug</span></div>
+                      <div class="ln">3 people aboard already. Same train, same coach class.</div>
+                      <div class="expiry calm">Add that journey</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card" role="button" tabindex="0" data-sheet="invite">
+                  <div class="row">
+                    <div class="thumb" style="background:var(--a-surf-2);color:var(--a-yellow)">GO</div>
+                    <div class="who">
+                      <div class="nm">Gomti Express <span class="ts">Tomorrow</span></div>
+                      <div class="ln">5 people on the morning run to Delhi.</div>
+                      <div class="expiry calm">Add that journey</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="notice">
+                  <span class="i">◆</span>
+                  <p>Eleven people have travelled Lucknow to Delhi on Safar this week. The route is alive even when your specific train isn't.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= NIGHT ONE : ADDA ================= -->
+            <div class="pane" data-pane="adda" data-variant="empty">
+              <div class="apphead">
+                <h2>Adda</h2>
+                <div class="sub">Opens at three people</div>
+              </div>
+              <div class="body">
+                <div class="bigempty">
+                  <div class="em">Adda needs three.</div>
+                  <p>A group plan with one person in it is just a person standing on a platform. You're one.</p>
+                </div>
+
+                <div class="progress">
+                  <div class="track"><i class="lit"></i><i></i><i></i></div>
+                  <div class="cap"><span>1 aboard</span><span>3 to open adda</span></div>
+                </div>
+
+                <div class="label">You can still set one up</div>
+
+                <div class="card flat">
+                  <div class="plan">
+                    <div class="when"><div class="h">23:50</div><div class="d">Tonight</div></div>
+                    <div class="who">
+                      <div class="ti">Chai on the platform</div>
+                      <div class="wh">Kanpur Central · 10 minute halt</div>
+                      <div class="go">Waiting for two more — anyone who joins tonight sees this first.</div>
+                    </div>
+                  </div>
+                </div>
+
+                <button class="btn" style="margin-top:6px">Start something</button>
+                <button class="btn btn-ghost" style="margin-top:9px" data-sheet="invite">Get someone else on</button>
+
+                <div class="notice">
+                  <span class="i">◆</span>
+                  <p>A plan posted before anyone arrives is the first thing the second person sees. It's the cheapest way to make an empty train look like somewhere worth being.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= NIGHT ONE : CHATS ================= -->
+            <div class="pane" data-pane="chats" data-variant="empty">
+              <div class="apphead">
+                <h2>Chats</h2>
+                <div class="sub">Nothing yet</div>
+              </div>
+              <div class="body">
+                <div class="bigempty">
+                  <div class="em">No conversations tonight.</div>
+                  <p>Not yet, anyway. Eight hours is a long time and the train hasn't left.</p>
+                </div>
+
+                <div class="label">In the meantime</div>
+
+                <div class="card" role="button" tabindex="0" data-journal>
+                  <div class="row">
+                    <div class="thumb" style="background:var(--a-surf-2);color:var(--a-green)">✎</div>
+                    <div class="who">
+                      <div class="nm">One line about tonight</div>
+                      <div class="ln">Stays on your phone. We show it back to you the next time you're on this route.</div>
+                      <div class="expiry good">Works with no signal</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card" role="button" tabindex="0" data-qroom>
+                  <div class="row">
+                    <div class="thumb" style="background:linear-gradient(140deg,#8BA3C5,#2A4062)">“</div>
+                    <div class="who">
+                      <div class="nm">Waiting room</div>
+                      <div class="ln">Ten of them. You'll get through these before Kanpur.</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="notice">
+                  <span class="i">◆</span>
+                  <p>If nobody joins tonight, Safar will not send you anything tomorrow. An app that nags an empty room gets uninstalled.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= FULL : TRIP ================= -->
+            <div class="pane" data-pane="trip" data-variant="full">
+              <div class="apphead">
+                <h2>Your safar</h2>
+                <div class="sub">Friday, 14 August</div>
+              </div>
+              <div class="body">
+                <div class="trip">
+                  <div class="trip-band"><span>Sleeper · S6</span><span>40 min late</span></div>
+                  <div class="trip-main">
+                    <div class="trip-name">12229 Lucknow Mail</div>
+                    <div class="od">
+                      <div class="pt"><div class="t">22:00</div><div class="p">Lucknow</div></div>
+                      <div class="mid"><div class="bar"></div><div class="dur">8h 35m</div></div>
+                      <div class="pt r"><div class="t">06:35</div><div class="p">New Delhi</div></div>
+                    </div>
+                    <div class="countdown">
+                      <div><div class="n">34 min</div><div class="c">Till departure</div></div>
+                      <div class="rt"><div class="n">18</div><div class="c">Open to talking</div></div>
+                    </div>
+                  </div>
+                </div>
+                <button class="btn" style="margin-top:12px" data-goto="onboard">See who's onboard</button>
+
+                <div class="label">Worth opening anyway</div>
+                <div class="card" role="button" tabindex="0" data-halts>
+                  <div class="row">
+                    <div class="thumb" style="background:var(--a-surf-2);color:var(--a-yellow)">◷</div>
+                    <div class="who">
+                      <div class="nm">Tonight's halts</div>
+                      <div class="ln">Six stops, how long each one is, and what's worth getting off for.</div>
+                      <div class="expiry good">Works with no signal</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="label">Safety</div>
+                <div class="card flat">
+                  <div class="row">
+                    <div class="thumb" style="background:var(--a-surf-2);color:var(--a-green)">↗</div>
+                    <div class="who">
+                      <div class="nm">Send this journey to someone</div>
+                      <div class="ln">Train, timings and live position go to one person of your choice, off the app.</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="notice">
+                  <span class="i">◆</span>
+                  <p>You only appear to people who added this same train. Nobody can search for you, and nobody outside tonight's journey can see you at all.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= FULL : ONBOARD ================= -->
+            <div class="pane" data-pane="onboard" data-variant="full">
+              <div class="apphead">
+                <h2>Onboard</h2>
+                <div class="sub">12229 · 18 open to talking</div>
+              </div>
+              <div class="body">
+                <div class="chipbar">
+                  <button class="chip" aria-pressed="true">Everyone</button>
+                  <button class="chip" aria-pressed="false">First years</button>
+                  <button class="chip" aria-pressed="false">Travelling alone</button>
+                </div>
+                <div class="grid2">
+                  <div class="pcard" role="button" tabindex="0" data-person>
+                    <div class="pic" style="background:linear-gradient(145deg,#A8BEDC,#23354D)"><span class="ini">I</span><span class="lockchip">Locked</span></div>
+                    <div class="nm">Ishita</div><div class="bi">First time out of Gonda. Packed three books, will finish none.</div>
+                  </div>
+                  <div class="pcard" role="button" tabindex="0" data-person>
+                    <div class="pic" style="background:linear-gradient(145deg,#7C90D0,#1B2A52)"><span class="ini">A</span><span class="lockchip">Locked</span></div>
+                    <div class="nm">Aryan</div><div class="bi">Second year, still can't sleep on trains. Will talk your ear off.</div>
+                  </div>
+                  <div class="pcard" role="button" tabindex="0" data-person>
+                    <div class="pic" style="background:linear-gradient(145deg,#C4CFDC,#495B7D)"><span class="ini">N</span><span class="lockchip">Locked</span></div>
+                    <div class="nm">Nusrat</div><div class="bi">Here for the window seat and nothing else. Say hi anyway.</div>
+                  </div>
+                  <div class="pcard" role="button" tabindex="0" data-person>
+                    <div class="pic" style="background:linear-gradient(145deg,#93C3C9,#1C4550)"><span class="ini">D</span><span class="lockchip open">Open</span></div>
+                    <div class="nm">Devansh</div><div class="bi">Carrying a guitar I barely play. Requests welcome.</div>
+                  </div>
+                  <div class="pcard" role="button" tabindex="0" data-person>
+                    <div class="pic" style="background:linear-gradient(145deg,#AEA4D4,#2E2A57)"><span class="ini">P</span><span class="lockchip">Locked</span></div>
+                    <div class="nm">Priya</div><div class="bi">Back to hostel after two weeks of my mother's food. Mourning.</div>
+                  </div>
+                  <div class="pcard" role="button" tabindex="0" data-person>
+                    <div class="pic" style="background:linear-gradient(145deg,#89ADBC,#254450)"><span class="ini">K</span><span class="lockchip">Locked</span></div>
+                    <div class="nm">Karan</div><div class="bi">Anyone up for cards? I lose gracefully.</div>
+                  </div>
+                </div>
+                <div class="notice pink">
+                  <span class="i">◆</span>
+                  <p>Name, face, two lines. That's all anyone gets until you both tap unlock.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= FULL : ADDA ================= -->
+            <div class="pane" data-pane="adda" data-variant="full">
+              <div class="apphead">
+                <h2>Adda</h2>
+                <div class="sub">Things happening on this train</div>
+              </div>
+              <div class="body">
+                <div class="card flat">
+                  <button class="join" data-join>Join</button>
+                  <div class="plan">
+                    <div class="when"><div class="h">23:50</div><div class="d">Tonight</div></div>
+                    <div class="who">
+                      <div class="ti">Chai on the platform</div>
+                      <div class="wh">Kanpur Central · 10 minute halt</div>
+                      <div class="go">
+                        <span class="faces"><i style="background:linear-gradient(145deg,#A8BEDC,#23354D)"></i><i style="background:linear-gradient(145deg,#7C90D0,#1B2A52)"></i><i style="background:linear-gradient(145deg,#C4CFDC,#495B7D)"></i></span>
+                        5 going
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="card flat">
+                  <button class="join" data-join>Join</button>
+                  <div class="plan">
+                    <div class="when"><div class="h">23:00</div><div class="d">Tonight</div></div>
+                    <div class="who">
+                      <div class="ti">Cards before lights out</div>
+                      <div class="wh">Coach S6, bay 3 · bring change</div>
+                      <div class="go">
+                        <span class="faces"><i style="background:linear-gradient(145deg,#89ADBC,#254450)"></i><i style="background:linear-gradient(145deg,#AEA4D4,#2E2A57)"></i></span>
+                        7 going
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <div class="card flat">
+                  <button class="join" data-join>Join</button>
+                  <div class="plan">
+                    <div class="when"><div class="h">05:30</div><div class="d">Sat</div></div>
+                    <div class="who">
+                      <div class="ti">Sunrise before Ghaziabad</div>
+                      <div class="wh">Door of S6 · somewhere past Aligarh</div>
+                      <div class="go">
+                        <span class="faces"><i style="background:linear-gradient(145deg,#93C3C9,#1C4550)"></i></span>
+                        4 going
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                <button class="btn" style="margin-top:14px">Start something</button>
+                <div class="notice">
+                  <span class="i">◆</span>
+                  <p>Group plans are public to the coach. Nobody has to walk up to a stranger alone.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= FULL : CHATS ================= -->
+            <div class="pane" data-pane="chats" data-variant="full">
+              <div class="apphead">
+                <h2>Chats</h2>
+                <div class="sub">All of this ends after Delhi</div>
+              </div>
+              <div class="body">
+                <div class="card" role="button" tabindex="0" data-thread>
+                  <div class="row">
+                    <div class="thumb" style="background:linear-gradient(145deg,#A8BEDC,#23354D)">I</div>
+                    <div class="who">
+                      <div class="nm">Ishita <span class="ts">21:19</span></div>
+                      <div class="ln">wait you're also in S6??</div>
+                      <div class="expiry">Ends 9h after the last message</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="card" role="button" tabindex="0" data-thread>
+                  <div class="row">
+                    <div class="thumb" style="background:var(--a-surf-2);color:var(--a-yellow)">S6</div>
+                    <div class="who">
+                      <div class="nm">Coach S6 <span class="ts">21:04</span></div>
+                      <div class="ln">Devansh: playing something after Kanpur if anyone's up</div>
+                      <div class="expiry">14 people · ends 9h after the last message</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="card" role="button" tabindex="0" data-thread>
+                  <div class="row">
+                    <div class="thumb" style="background:var(--a-surf-2);color:var(--a-blue)">12229</div>
+                    <div class="who">
+                      <div class="nm">Whole train <span class="ts">20:48</span></div>
+                      <div class="ln">Karan: we're 40 late, so Kanpur chai is happening at half twelve</div>
+                      <div class="expiry">61 people · ends 9h after the last message</div>
+                    </div>
+                  </div>
+                </div>
+                <div class="notice green">
+                  <span class="i">◆</span>
+                  <p>The train is 40 minutes late and nothing expires early — a chat only dies once it's actually gone quiet for nine hours.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= TAB BAR ================= -->
+            <nav class="tabbar" role="tablist">
+              <button class="tab" role="tab" aria-selected="true" data-tab="trip">
+                <svg viewBox="0 0 24 24"><rect x="5" y="3" width="14" height="13" rx="3.5"/><path d="M5 9.5h14M8.5 21l2.2-4M15.5 21l-2.2-4"/><circle cx="9" cy="12.6" r=".7"/><circle cx="15" cy="12.6" r=".7"/></svg>
+                Trip
+              </button>
+              <button class="tab" role="tab" aria-selected="false" data-tab="onboard">
+                <svg viewBox="0 0 24 24"><circle cx="9" cy="8" r="3.3"/><path d="M2.8 20c0-3.4 2.8-5.6 6.2-5.6s6.2 2.2 6.2 5.6"/><path d="M16.4 6.6a3 3 0 0 1 0 5.9M17.4 14.9c2.4.5 3.9 2.5 3.9 5.1"/></svg>
+                Onboard
+              </button>
+              <button class="tab" role="tab" aria-selected="false" data-tab="adda">
+                <svg viewBox="0 0 24 24"><path d="M4.5 5.5h15v10h-8l-4 3.5v-3.5h-3z"/><circle cx="9.5" cy="10.5" r=".8"/><circle cx="12" cy="10.5" r=".8"/><circle cx="14.5" cy="10.5" r=".8"/></svg>
+                Adda
+              </button>
+              <button class="tab" role="tab" aria-selected="false" data-tab="chats">
+                <svg viewBox="0 0 24 24"><path d="M20.5 11.5a8 8 0 0 1-11.9 7L3.5 20l1.6-4.6a8 8 0 1 1 15.4-3.9z"/></svg>
+                <span class="dot" id="chatDot"></span>
+                Chats
+              </button>
+            </nav>
+
+            <!-- ================= INVITE SHEET ================= -->
+            <div class="sheet" data-sheetname="invite">
+              <div class="sheet-in">
+                <div class="grab"></div>
+                <h2 style="font-size:23px">Get someone on</h2>
+                <p style="margin:9px 0 0;font-size:14px;color:var(--a-dim);line-height:1.5">
+                  Whoever scans this lands straight on tonight's 12229 — signed up and aboard in two taps,
+                  no typing a train number.
+                </p>
+
+                <div class="qrwrap"><svg id="qr" viewBox="0 0 25 25" shape-rendering="crispEdges" aria-label="Join code"></svg></div>
+                <p style="text-align:center;font-family:var(--mono);font-size:10px;letter-spacing:.13em;text-transform:uppercase;color:var(--a-dim-2);margin:12px 0 0">
+                  12229 · 14 Aug · S6
+                </p>
+
+                <div class="label">Or send it</div>
+                <button class="btn" style="background:#25D366;color:#07240F">Share on WhatsApp</button>
+                <button class="btn btn-ghost" style="margin-top:9px">Copy link</button>
+
+                <div class="notice">
+                  <span class="i">◆</span>
+                  <p>Most people will use WhatsApp — a college group is where twenty people who travel the same route already are. The code is for the one sitting opposite you.</p>
+                </div>
+
+                <button class="btn btn-ghost" style="margin-top:10px" data-close>Close</button>
+              </div>
+            </div>
+
+            <!-- ================= JOURNAL SHEET ================= -->
+            <div class="sheet" data-sheetname="journal">
+              <div class="sheet-in">
+                <div class="grab"></div>
+                <h2 style="font-size:23px">One line about tonight</h2>
+                <p style="margin:9px 0 0;font-size:14px;color:var(--a-dim);line-height:1.5">
+                  Never uploaded, never shown to anyone. It's here so the app is worth something on a night
+                  when nobody else is aboard.
+                </p>
+
+                <div class="fld">
+                  <div class="k">14 August · 12229 · Lucknow → Delhi</div>
+                  <div class="v area" style="color:var(--a-dim-2)">Platform 4, waiting. Ma packed too much food again.</div>
+                </div>
+
+                <div class="label">Last time on this route</div>
+                <div class="card flat">
+                  <div class="who">
+                    <div class="nm" style="font-size:14px">21 June · Gomti Express</div>
+                    <div class="ln">Slept the whole way and missed Kanpur. Not doing that again.</div>
+                  </div>
+                </div>
+
+                <span class="offbadge" style="margin-top:14px">Stays on this phone</span>
+
+                <button class="btn" style="margin-top:16px" data-close>Save</button>
+              </div>
+            </div>
+
+            <!-- ================= PROFILE SHEET ================= -->
+            <div class="sheet" data-sheetname="person">
+              <div class="sheet-in">
+                <div class="grab"></div>
+                <div style="display:flex;gap:14px;align-items:flex-start">
+                  <div class="pic" style="width:96px;flex:none;aspect-ratio:4/5;background:linear-gradient(145deg,#A8BEDC,#23354D)"><span class="ini" style="font-size:34px">I</span></div>
+                  <div style="flex:1;min-width:0">
+                    <div style="font-family:var(--display);font-size:25px;letter-spacing:-.02em">Ishita</div>
+                    <p style="margin:8px 0 0;font-size:14px;color:var(--a-dim);line-height:1.5">First time out of Gonda. Packed three books, will finish none.</p>
+                    <div class="tagset" style="margin-top:10px"><span class="tg">Sketching</span><span class="tg">Indie</span></div>
+                  </div>
+                </div>
+                <div class="label" id="lockLabel">Locked · she sees yours locked too</div>
+                <div class="lockbox">
+                  <div class="lf"><span class="k">College</span><span class="v hidden" data-secret="Isabella Thoburn, Lucknow">Hidden until unlocked</span></div>
+                  <div class="lf"><span class="k">Year</span><span class="v hidden" data-secret="First year">Hidden until unlocked</span></div>
+                  <div class="lf"><span class="k">Coach &amp; seat</span><span class="v hidden" data-secret="S6 · 42, side lower">Hidden until unlocked</span></div>
+                  <div class="lf"><span class="k">Getting off at</span><span class="v hidden" data-secret="Ghaziabad">Hidden until unlocked</span></div>
+                  <div class="lf"><span class="k">Instagram</span><span class="v hidden" data-secret="@ishita.draws">Hidden until unlocked</span></div>
+                </div>
+                <div class="btn-row" style="margin-top:16px">
+                  <button class="btn btn-ghost" data-close>Not now</button>
+                  <button class="btn btn-pink" id="unlockBtn" data-unlock>Ask to unlock</button>
+                </div>
+                <div class="notice" id="unlockNote">
+                  <span class="i">◆</span>
+                  <p>She has to tap unlock too. Until then she learns nothing about you either — not even that you looked.</p>
+                </div>
+                <button class="btn btn-ghost" style="margin-top:10px" data-thread>Say hi without unlocking</button>
+                <button class="btn btn-ghost" style="margin-top:8px;color:var(--a-dim-2)" data-report>Block · Report</button>
+              </div>
+            </div>
+
+            <!-- ================= HALT GUIDE ================= -->
+            <div class="overlay" data-overlay="halts">
+              <div class="ovhead">
+                <button class="back" data-close aria-label="Back">‹</button>
+                <div>
+                  <div class="t">Tonight's halts</div>
+                  <div class="s">12229 · Lucknow → New Delhi</div>
+                </div>
+              </div>
+              <div class="ovbody">
+                <span class="offbadge">Downloaded · works with no signal</span>
+
+                <div style="margin-top:10px">
+                  <div class="halt">
+                    <div class="tm"><div class="h">23:50</div><div class="d">10 min</div></div>
+                    <div class="st">
+                      <div class="n">Kanpur Central</div>
+                      <div class="c">Platform 1 · 189 km</div>
+                      <div class="tip">The long one. Everyone's still awake, the chai stall is toward the front of the platform, and this is where most people get off for air.</div>
+                    </div>
+                  </div>
+                  <div class="halt">
+                    <div class="tm"><div class="h">01:22</div><div class="d">2 min</div></div>
+                    <div class="st">
+                      <div class="n">Etawah</div>
+                      <div class="c">Platform 2 · 328 km</div>
+                      <div class="tip">Don't get off. Two minutes is not two minutes. Signal disappears for about forty minutes after this.</div>
+                    </div>
+                  </div>
+                  <div class="halt">
+                    <div class="tm"><div class="h">02:55</div><div class="d">5 min</div></div>
+                    <div class="st">
+                      <div class="n">Tundla Junction</div>
+                      <div class="c">Platform 3 · 428 km</div>
+                      <div class="tip">Dead quiet. If you're the sort of person who likes standing at an open door at three in the morning, this is the stop.</div>
+                    </div>
+                  </div>
+                  <div class="halt">
+                    <div class="tm"><div class="h">04:05</div><div class="d">3 min</div></div>
+                    <div class="st">
+                      <div class="n">Aligarh Junction</div>
+                      <div class="c">Platform 1 · 508 km</div>
+                      <div class="tip">Tea comes onto the train here rather than the other way round.</div>
+                    </div>
+                  </div>
+                  <div class="halt">
+                    <div class="tm"><div class="h">05:52</div><div class="d">2 min</div></div>
+                    <div class="st">
+                      <div class="n">Ghaziabad</div>
+                      <div class="c">Platform 4 · 611 km</div>
+                      <div class="tip">First Delhi stop. A good number of people get off here, so say what you're going to say before this.</div>
+                    </div>
+                  </div>
+                  <div class="halt">
+                    <div class="tm"><div class="h">06:35</div><div class="d">Arr</div></div>
+                    <div class="st">
+                      <div class="n">New Delhi</div>
+                      <div class="c">Platform 12 · 636 km</div>
+                      <div class="tip">Gate 2 for the metro. Chats stay alive nine hours past your last message, so there's no rush at the door.</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="notice">
+                  <span class="i">◆</span>
+                  <p>All of this is stored on the phone when you add the journey. It's the one screen guaranteed to work at two in the morning past Etawah.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= CHAT THREAD ================= -->
+            <div class="overlay" data-overlay="thread">
+              <div class="ovhead">
+                <button class="back" data-close aria-label="Back">‹</button>
+                <div class="thumb" style="width:36px;height:36px;font-size:14px;background:linear-gradient(145deg,#A8BEDC,#23354D)">I</div>
+                <div><div class="t">Ishita</div><div class="s">Ends 9h after the last message</div></div>
+              </div>
+              <div class="offbar"><span></span><span>No signal past Etawah — messages will send themselves</span></div>
+              <div class="msgs">
+                <div class="sys">You're both onboard 12229<br>Neither of you has unlocked anything</div>
+                <div class="bub them">ok who else is awake, this coach is dead</div>
+                <div class="bub me">very much awake. eight hours to go and I've already eaten all my food</div>
+                <div class="bub them">rookie. I have a whole tiffin my mother packed</div>
+                <div class="bub me">chai at Kanpur? apparently a few people are going</div>
+                <div class="bub them">wait you're also in S6??</div>
+                <div class="bub me queued">yeah, bay 3<span class="st">Waiting for signal</span></div>
+              </div>
+              <div class="quickbar">
+                <button class="chip">Ask to unlock</button>
+                <button class="chip">Invite to adda</button>
+                <button class="chip">Report</button>
+              </div>
+              <div class="composer">
+                <div class="fakein">Message Ishita…</div>
+                <button class="send" aria-label="Send">↑</button>
+              </div>
+            </div>
+
+            <!-- ================= FIRST RUN TOUR ================= -->
+            <div class="tour" id="tour">
+              <div class="tourhole" id="tourHole"></div>
+              <div class="tourcard" id="tourCard">
+                <div class="tn" id="tourN">1 of 3</div>
+                <b id="tourTitle"></b>
+                <p id="tourBody"></p>
+                <div class="tourbtns">
+                  <button class="skip" data-tour-skip>Skip</button>
+                  <button class="next" data-tour-next>Got it</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= OFF ROUTE ================= -->
+            <div class="pane" data-pane="trip" data-variant="off">
+              <div class="apphead">
+                <h2>Your safar</h2>
+                <div class="sub">Bhopal → Indore · Sat 15 Aug</div>
+              </div>
+              <div class="body">
+                <div class="bigempty" style="padding-top:14px">
+                  <div class="em">Safar isn't running on this route yet.</div>
+                  <p>Not a bug and not your fault. We switch a route on once enough people on it are waiting, because turning one on early just means everybody finds an empty train.</p>
+                </div>
+
+                <div class="firstbadge" style="margin-top:18px">
+                  <div class="n">17</div>
+                  <h3>people from Bhopal are waiting</h3>
+                  <p>Twenty-three more and this route goes live for everyone on it, in both directions.</p>
+                </div>
+
+                <div class="progress" style="margin-top:16px">
+                  <div class="track" id="routeTrack"></div>
+                  <div class="cap"><span>17 waiting</span><span>40 switches it on</span></div>
+                </div>
+
+                <button class="btn btn-pink" style="margin-top:18px" data-sheet="invite">Bring people from your route</button>
+
+                <div class="label">You can still use it tonight</div>
+
+                <div class="card" role="button" tabindex="0" data-halts>
+                  <div class="row">
+                    <div class="thumb" style="background:var(--a-surf-2);color:var(--a-yellow)">◷</div>
+                    <div class="who">
+                      <div class="nm">Your halts</div>
+                      <div class="ln">Pulled from the public timetable, so this works on any train in the country.</div>
+                      <div class="expiry good">Works with no signal</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="card" role="button" tabindex="0" data-qroom>
+                  <div class="row">
+                    <div class="thumb" style="background:linear-gradient(140deg,#8BA3C5,#2A4062)">“</div>
+                    <div class="who">
+                      <div class="nm">Waiting room</div>
+                      <div class="ln">Works anywhere. Doesn't need another soul.</div>
+                    </div>
+                  </div>
+                </div>
+
+                <div class="label">Live right now</div>
+                <div class="card flat">
+                  <div class="who">
+                    <div class="nm" style="font-size:14px">Lucknow ⇄ Delhi</div>
+                    <div class="ln">61 people travelling this week. This is what your route looks like once it turns on.</div>
+                  </div>
+                </div>
+
+                <div class="notice">
+                  <span class="i">◆</span>
+                  <p>Nothing is locked to a city. Anyone can install Safar and add any train — we just don't pretend a route is busy when it isn't.</p>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= REPORT ================= -->
+            <div class="overlay" data-overlay="report">
+              <div class="ovhead">
+                <button class="back" data-report-back aria-label="Back">‹</button>
+                <div>
+                  <div class="t" id="repTitle">What happened?</div>
+                  <div class="s" id="repSub">She is not told any of this</div>
+                </div>
+              </div>
+              <div class="ovbody">
+
+                <!-- reason -->
+                <div class="rstep on" data-rstep="0">
+                  <p style="margin:0 0 14px;font-size:13.5px;color:var(--a-dim);line-height:1.5">
+                    Pick the closest one. You don't have to explain yourself, and nothing you choose is shown to her.
+                  </p>
+                  <button class="reason" data-rnext>Made me uncomfortable</button>
+                  <button class="reason" data-rnext>Sexual or abusive messages</button>
+                  <button class="reason" data-rnext>Asked me for money</button>
+                  <button class="reason" data-rnext>Not who they say they are</button>
+                  <button class="reason urgent" data-rnext>Following me around the train</button>
+                  <button class="reason" data-rnext>Something else</button>
+
+                  <div class="notice pink">
+                    <span class="i">◆</span>
+                    <p>If you feel unsafe right now, skip this and go straight to help.</p>
+                  </div>
+                  <button class="btn btn-pink" data-safety>I need help now</button>
+                </div>
+
+                <!-- confirm -->
+                <div class="rstep" data-rstep="1">
+                  <div class="conf">
+                    <div class="cline"><span class="ci">→</span><div><b>She disappears from your Safar</b><span>Immediately, permanently, both directions. She can't see you either.</span></div></div>
+                    <div class="cline"><span class="ci">→</span><div><b>She is not told</b><span>Not that you reported her, not that you blocked her. You're on the same train for six more hours — she just stops seeing you, as if you'd left.</span></div></div>
+                    <div class="cline"><span class="ci">→</span><div><b>Anything we act on happens after Delhi</b><span>No account is suspended mid-journey, because that tells someone standing twenty metres away exactly what you did.</span></div></div>
+                  </div>
+
+                  <div class="fld">
+                    <div class="k">Anything you want us to see · optional</div>
+                    <div class="v area" style="color:var(--a-dim-2)">She kept coming back to my seat after I said I was going to sleep.</div>
+                  </div>
+
+                  <button class="toggle" aria-pressed="true" data-toggle>
+                    <span class="tt"><b>Send the chat with it</b><span>Only your conversation with her. Nothing else from your account.</span></span>
+                    <span class="sw"></span>
+                  </button>
+
+                  <button class="btn btn-pink" data-rnext>Block and report</button>
+                  <button class="btn btn-ghost" style="margin-top:9px" data-close>Cancel</button>
+                </div>
+
+                <!-- done -->
+                <div class="rstep" data-rstep="2">
+                  <div class="bigdone" style="padding:20px 0 8px">
+                    <div class="tick" style="background:var(--a-alert);color:#2C0509">✓</div>
+                    <h3 style="font-size:25px">She's gone</h3>
+                    <p>You won't see her again on this train or any other. It took one tap and needed nobody's approval.</p>
+                  </div>
+
+                  <div class="label">If this was about your safety</div>
+                  <div class="card flat">
+                    <div class="row">
+                      <div class="thumb alertchip">139</div>
+                      <div class="who"><div class="nm">Railway helpline</div><div class="ln">Security and medical help on any train in India.</div></div>
+                    </div>
+                  </div>
+                  <div class="card flat">
+                    <div class="row">
+                      <div class="thumb alertchip">112</div>
+                      <div class="who"><div class="nm">Emergency</div><div class="ln">Police, ambulance, fire. Works from any phone.</div></div>
+                    </div>
+                  </div>
+                  <div class="card flat">
+                    <div class="row">
+                      <div class="thumb" style="background:var(--a-surf-2);color:var(--a-green)">↗</div>
+                      <div class="who"><div class="nm">Send your journey to someone</div><div class="ln">Your train and live position, to one person you trust.</div></div>
+                    </div>
+                  </div>
+
+                  <button class="btn" style="margin-top:16px" data-close>Done</button>
+                </div>
+
+              </div>
+            </div>
+
+            <!-- ================= SAFETY ================= -->
+            <div class="sheet" data-sheetname="safety">
+              <div class="sheet-in">
+                <div class="grab"></div>
+                <h2 style="font-size:23px;color:var(--a-alert)">Get help now</h2>
+                <p style="margin:9px 0 0;font-size:14px;color:var(--a-dim);line-height:1.5">
+                  Reporting can wait. These can't.
+                </p>
+                <div class="card flat" style="margin-top:16px">
+                  <div class="row">
+                    <div class="thumb alertchip">112</div>
+                    <div class="who"><div class="nm">Call 112</div><div class="ln">National emergency number. Police, ambulance, fire.</div></div>
+                  </div>
+                </div>
+                <div class="card flat">
+                  <div class="row">
+                    <div class="thumb alertchip">139</div>
+                    <div class="who"><div class="nm">Call 139</div><div class="ln">Railway helpline — security staff on board and at the next station.</div></div>
+                  </div>
+                </div>
+                <div class="card flat">
+                  <div class="row">
+                    <div class="thumb" style="background:var(--a-surf-2);color:var(--a-yellow)">◷</div>
+                    <div class="who"><div class="nm">Next stop is Kanpur, 23:50</div><div class="ln">Ten minute halt, platform 1. Staff are on the platform at this one.</div></div>
+                  </div>
+                </div>
+                <button class="btn btn-ghost" style="margin-top:14px" data-close>Back</button>
+              </div>
+            </div>
+
+            <!-- ================= SOMEONE JOINS ================= -->
+            <div class="joinseq" id="joinseq">
+
+              <!-- beat 1 : the one notification -->
+              <div class="beat on" data-beat="0">
+                <div class="lock">
+                  <div class="lockclock">
+                    <div class="t">23:47</div>
+                    <div class="d">Friday, 14 August</div>
+                  </div>
+                  <div class="pushcard">
+                    <div class="pushhead">
+                      <span class="appicon">S</span>
+                      <span class="appname">Safar</span>
+                      <span class="pushtime">now</span>
+                    </div>
+                    <div class="pushtitle">Someone else is on 12229</div>
+                    <div class="pushbody">Ishita just added tonight's train. You're not the only one any more.</div>
+                  </div>
+                  <div class="lockfoot">
+                    <button class="beatbtn" data-beat-next>Open</button>
+                    <p class="lockfine">This is the only notification Safar sends on an empty train. There is no second one.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- beat 2 : the moment -->
+              <div class="beat" data-beat="1">
+                <div class="moment">
+                  <div class="mtop"><span>12229 · Lucknow Mail</span><span>23:47</span></div>
+                  <div class="mmid">
+                    <div class="mbig">You're not alone on this train any more.</div>
+                    <div class="mcard">
+                      <div class="pic" style="width:78px;flex:none;aspect-ratio:4/5;background:linear-gradient(145deg,#A8BEDC,#23354D)"><span class="ini" style="font-size:28px">I</span></div>
+                      <div style="flex:1;min-width:0">
+                        <div class="mname">Ishita</div>
+                        <p class="mbio">First time out of Gonda. Packed three books, will finish none.</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div class="mbot">
+                    <button class="beatbtn dark" data-beat-next>Say hi</button>
+                    <p class="mfine">Adda opens at three. You're two.</p>
+                  </div>
+                </div>
+              </div>
+
+              <!-- beat 3 : what changed -->
+              <div class="beat" data-beat="2">
+                <div class="lock" style="justify-content:flex-start;padding-top:34px">
+                  <h2 style="font-size:26px;letter-spacing:-.025em">What just changed</h2>
+                  <p style="margin:10px 0 0;font-size:14px;color:var(--a-dim);line-height:1.5">
+                    Both phones got the same thing at the same second. Neither of you had to do anything.
+                  </p>
+
+                  <div class="changed">
+                    <div class="ch">
+                      <span class="cn">01</span>
+                      <div><b>A coach chat now exists</b><span>S6 has two people in it. It didn't exist a minute ago.</span></div>
+                    </div>
+                    <div class="ch">
+                      <span class="cn">02</span>
+                      <div><b>Adda moved to two of three</b><span>One more person and group plans unlock for the whole coach.</span></div>
+                    </div>
+                    <div class="ch">
+                      <span class="cn">03</span>
+                      <div><b>She saw the same screen</b><span>Her version said your name. Symmetric, so neither of you is the one being approached.</span></div>
+                    </div>
+                    <div class="ch">
+                      <span class="cn">04</span>
+                      <div><b>Nothing was unlocked</b><span>You still can't see her coach, college or contact. That still takes two taps.</span></div>
+                    </div>
+                  </div>
+
+                  <div class="progress" style="margin-top:20px">
+                    <div class="track"><i class="lit"></i><i class="lit"></i><i></i></div>
+                    <div class="cap"><span>2 aboard</span><span>3 to open adda</span></div>
+                  </div>
+
+                  <div style="margin-top:auto;padding-top:20px">
+                    <button class="beatbtn" id="joinRestart">Play it again</button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- ================= WAITING ROOM ================= -->
+            <div class="qroom" data-qroomel>
+              <div class="qtop">
+                <span>Waiting room</span>
+                <button class="x" data-close aria-label="Close">×</button>
+              </div>
+              <div class="qmid">
+                <div class="qtext" id="qText"></div>
+                <div class="qno" id="qNo"></div>
+              </div>
+              <div class="qbot">
+                <div class="qwait">12229 leaves in 34 minutes</div>
+                <button class="qbtn" id="qNext">Another one</button>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </div>
+
+      <aside class="notes">
+        <div class="ncard">
+          <div class="nkick" id="nKick"></div>
+          <h3 id="nTitle"></h3>
+          <p id="nBody"></p>
+          <ul class="nlist" id="nList"></ul>
+        </div>
+      </aside>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="eyebrow">Night one</div>
+    <h2>Eight ways to keep the first fifty</h2>
+    <p class="intro">
+      Retention on an empty train isn't a notification problem, it's an honesty problem. The app has to be
+      worth opening when it can't do the thing it exists for — and the people who'll fix that are sitting
+      within thirty metres of the person holding the phone.
+    </p>
+
+    <div class="plays">
+
+      <div class="play">
+        <div class="n">01 · DISTRIBUTION</div>
+        <h4>Never launch to individuals</h4>
+        <p>One student installing it alone is guaranteed to see nothing. Twenty students from the same hostel installing it in the same week are guaranteed to collide on a train within a fortnight.</p>
+        <div class="do"><b>Do this</b><span>Pick one Lucknow college, get into three of their WhatsApp groups, and launch to all of them on the same day.</span></div>
+      </div>
+
+      <div class="play">
+        <div class="n">02 · TIMING</div>
+        <h4>Launch on the weekend everyone travels</h4>
+        <p>Student travel is spiky, not steady. Semester start, semester end, and the long festival weekends are when a hundred people from one college are on the same three trains.</p>
+        <div class="do"><b>Do this</b><span>Work backwards from the academic calendar and don't launch on a random Tuesday in the middle of term.</span></div>
+      </div>
+
+      <div class="play">
+        <div class="n">03 · PRODUCT</div>
+        <h4>Be useful with zero other users</h4>
+        <p>The halt guide, the waiting room and the private note all work alone and offline. They're the reason someone opens the app a second time on a night when nobody joined.</p>
+        <div class="do"><b>Do this</b><span>Judge every new feature by whether it still does something when the user is the only person aboard.</span></div>
+      </div>
+
+      <div class="play">
+        <div class="n">04 · MECHANIC</div>
+        <h4>Your growth engine is the seat opposite</h4>
+        <p>Unlike almost any other social app, your missing users are physically present. The person across the aisle is bored, holding a phone, and going to the same city.</p>
+        <div class="do"><b>Do this</b><span>Make the join code a single screen that's fast to show someone, and make scanning it drop them straight onto tonight's train.</span></div>
+      </div>
+
+      <div class="play">
+        <div class="n">05 · MECHANIC</div>
+        <h4>Let people announce a journey early</h4>
+        <p>Density has to exist before the train leaves, not after. Someone posting "I'm on 12229 Friday" into a college group three days ahead is worth more than any notification you can send.</p>
+        <div class="do"><b>Do this</b><span>Make a shareable journey card the main action on an empty train, aimed squarely at WhatsApp.</span></div>
+      </div>
+
+      <div class="play">
+        <div class="n">06 · WIDENING</div>
+        <h4>Widen the match when it's thin</h4>
+        <p>If tonight's train is empty, the honest thing is to show that the route isn't. Other trains, other days, a weekly count — proof of life without pretending anyone is beside you right now.</p>
+        <div class="do"><b>Do this</b><span>Match on the train first, then the route, then the week. Narrow it again as density grows.</span></div>
+      </div>
+
+      <div class="play">
+        <div class="n">07 · DOING IT BY HAND</div>
+        <h4>Personally onboard the first fifty</h4>
+        <p>At this size you can message every single user yourself. You'll learn more from ten replies than from any analytics you could afford, and people stay for a founder who wrote to them.</p>
+        <div class="do"><b>Do this</b><span>Message every new user the day after their journey and ask one question: did you talk to anyone?</span></div>
+      </div>
+
+      <div class="play">
+        <div class="n">08 · RESTRAINT</div>
+        <h4>Go quiet when it's empty</h4>
+        <p>The instinct is to notify harder when nobody's around. It's the fastest way to get uninstalled. An app that stays silent on a dead night keeps the right to buzz on a live one.</p>
+        <div class="do"><b>Do this</b><span>Send exactly one notification — when a second person actually joins your train. Nothing else.</span></div>
+      </div>
+
+    </div>
+
+    <div class="warn">
+      <h4>The one thing that would kill it</h4>
+      <p>
+        Do not seed fake profiles to make an empty train look busy. Every other social product can get away
+        with it for a while; you cannot, because your users can lift their heads and count the people in the
+        coach. One person working out that "Priya, two coaches down" doesn't exist is the end — not of that
+        user, but of every group chat they're in. An honest empty screen is a smaller cost than that.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="eyebrow">The rule the whole app is built on</div>
+    <h2>Two taps, or nothing</h2>
+    <p class="intro">
+      Everything a person could use to find you in the real world comes from your ticket, and none of it is
+      visible by default. Asking to unlock costs nothing, reveals nothing, and is never announced.
+    </p>
+    <div class="ptable">
+      <div class="pcol">
+        <h4>Visible to everyone onboard</h4>
+        <ul>
+          <li><b>First name</b> only</li>
+          <li><b>One photo</b>, no gallery</li>
+          <li><b>Two lines</b> you wrote yourself</li>
+          <li><b>A few tags</b> — what you're into</li>
+          <li><b>Whether you're open</b> to talking</li>
+        </ul>
+      </div>
+      <div class="pcol open">
+        <h4>Only after you both unlock</h4>
+        <ul>
+          <li><b>Coach and seat number</b></li>
+          <li><b>College and year</b></li>
+          <li><b>Where you're getting off</b></li>
+          <li><b>Instagram or phone</b></li>
+          <li><b>Hometown</b></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="eyebrow">The data</div>
+    <h2>A database that empties itself every night</h2>
+    <p class="intro">
+      The thing to hold onto: <b>this is a scratchpad, not a record.</b> Almost every row exists because of one
+      train on one date, and dies shortly after that train arrives. What's left over is tiny — who you are,
+      and who you never want to see again.
+    </p>
+
+    <div class="ptable">
+      <div class="pcol">
+        <h4>Kept forever</h4>
+        <ul>
+          <li><b>users</b> — name, photo, two lines, tags, language, date of birth</li>
+          <li><b>blocks</b> — who blocked whom</li>
+          <li><b>reports</b> — who reported whom, and on which journey</li>
+        </ul>
+      </div>
+      <div class="pcol open">
+        <h4>Deleted automatically</h4>
+        <ul>
+          <li><b>journeys</b> — train, date, coach, visibility</li>
+          <li><b>threads</b> and <b>messages</b></li>
+          <li><b>unlocks</b> — who asked, whether it was mutual</li>
+          <li><b>plans</b> — adda, and who joined</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="intro" style="margin-top:26px">
+      <b>Blocks are the exception that matters.</b> Everything else can vanish with the journey, but if you
+      blocked somebody on the Lucknow Mail in August they must still be invisible to you in December. Blocks
+      outlive the data that created them.
+    </p>
+
+    <div class="costwrap">
+      <table class="dt">
+        <thead><tr><th>Table</th><th>What it holds</th><th>How long it lives</th></tr></thead>
+        <tbody>
+          <tr><td>users</td><td>First name, photo URL, 140-character bio, tags, language, date of birth, account status</td><td class="keep">Until they delete it</td></tr>
+          <tr><td>blocks</td><td>blocker → blocked</td><td class="keep">Forever</td></tr>
+          <tr><td>reports</td><td>Reporter, reported, journey, reason</td><td class="keep">Kept for review</td></tr>
+          <tr><td>journeys</td><td>User, service code, travel date, coach, boarding and alighting station, visibility</td><td>24h after arrival</td></tr>
+          <tr><td>threads</td><td>Kind (one-to-one, coach, whole train), service code, last_message_at</td><td>9h after the last message</td></tr>
+          <tr><td>messages</td><td>Thread, sender, body, client_id</td><td>With the thread</td></tr>
+          <tr><td>unlocks</td><td>The pair, who asked, whether both did</td><td>With the journey</td></tr>
+          <tr><td>plans</td><td>Title, place, time, host, who joined</td><td>With the journey</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="eyebrow" style="display:block;margin-top:52px">One row's whole life</div>
+    <h2 style="font-size:26px;margin-top:6px">From adding a journey to nothing left</h2>
+    <div class="life">
+      <div class="lstep"><span class="ln">1</span><b>Journey added</b><span>A row appears with an expiry set to arrival plus 24 hours. The halt guide downloads to the phone in the same moment.</span></div>
+      <div class="lstep"><span class="ln">2</span><b>Second person joins</b><span>The coach thread is created here — not on the first join, because a room with one person in it is worse than no room.</span></div>
+      <div class="lstep"><span class="ln">3</span><b>Every message</b><span>Pushes the thread's expiry to nine hours from now. A long conversation keeps itself alive; a dead one starts counting down.</span></div>
+      <div class="lstep"><span class="ln">4</span><b>Train arrives, late</b><span>Nothing happens. No timer is tied to the timetable, which is exactly why a four-hour delay breaks nothing.</span></div>
+      <div class="lstep"><span class="ln">5</span><b>Nine quiet hours</b><span>Thread and every message in it are deleted. An hourly scheduled job does this — free on both Supabase and Firebase.</span></div>
+      <div class="lstep last"><span class="ln">6</span><b>What survives</b><span>Your account, your photo, and any blocks. If you unlocked someone you already have their Instagram, which was the point.</span></div>
+    </div>
+
+    <div class="eyebrow" style="display:block;margin-top:52px">The whole app, roughly</div>
+    <h2 style="font-size:26px;margin-top:6px">One indexed lookup</h2>
+    <p class="intro">
+      Finding who's onboard is a single query against an index on <code>(service_code, travel_date)</code>,
+      filtered by visibility and by blocks in both directions. That's the core read path, and it stays cheap
+      because the table only ever holds journeys that haven't expired yet.
+    </p>
+
+    <div class="costwrap">
+      <table class="dt">
+        <thead><tr><th>What</th><th>Sum</th><th>Size</th></tr></thead>
+        <tbody>
+          <tr><td>Accounts</td><td>25,000 users at roughly 500 bytes each</td><td class="keep">12 MB</td></tr>
+          <tr><td>Photos</td><td>One each, compressed on the phone to about 40 KB before upload</td><td class="keep">1 GB</td></tr>
+          <tr><td>A busy night</td><td>200 people talking, 40 messages each, deleted the next day</td><td class="keep">1.6 MB</td></tr>
+          <tr><td>Messages after a year</td><td>Nothing accumulates, so this number never grows</td><td class="keep">0</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="intro" style="margin-top:26px">
+      <b>Photos are your real constraint, not conversations.</b> A free 1 GB bucket runs out at about 25,000
+      accounts while the message tables sit near empty. When that day comes, move images to a free 10 GB object
+      store and leave the database exactly where it is.
+    </p>
+
+    <div class="eyebrow" style="display:block;margin-top:52px">Offline</div>
+    <h2 style="font-size:26px;margin-top:6px">The phone is the source of truth for forty minutes</h2>
+    <div class="plays" style="margin-top:24px">
+      <div class="play">
+        <div class="n">WRITE</div>
+        <h4>Everything lands locally first</h4>
+        <p>A message is written to the phone's own store and rendered immediately, marked as waiting. The network attempt happens afterwards and is allowed to fail.</p>
+        <div class="do"><b>Why</b><span>Past Etawah there is no network for about forty minutes. An app that waits for a server there looks broken.</span></div>
+      </div>
+      <div class="play">
+        <div class="n">SYNC</div>
+        <h4>Every message carries a client id</h4>
+        <p>The phone generates a UUID for each message before sending. The server treats a repeat of that id as the same message rather than a new one.</p>
+        <div class="do"><b>Why</b><span>Retrying after a tunnel is then completely safe, and nobody ever sees the same line posted three times.</span></div>
+      </div>
+      <div class="play">
+        <div class="n">CACHE</div>
+        <h4>Downloaded when the journey is added</h4>
+        <p>Halt guide, your own journey, your profile and the waiting-room lines all land on the phone while there's still signal at the station.</p>
+        <div class="do"><b>Why</b><span>These are the screens that need to work at two in the morning, and they're small enough to ship in a few kilobytes.</span></div>
+      </div>
+      <div class="play">
+        <div class="n">NEVER</div>
+        <h4>Locked fields never reach the device</h4>
+        <p>Coach, seat, college and contact are withheld server-side until both unlocks exist. They aren't sent and hidden — they're not sent.</p>
+        <div class="do"><b>Why</b><span>Anything the phone holds can be read off the phone. The privacy promise has to be enforced before the data leaves.</span></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="eyebrow">Marketing</div>
+    <h2>Eight ways to get found, none of which cost money</h2>
+    <p class="intro">
+      You aren't buying installs. You're getting into rooms where forty people who travel the same route
+      already talk to each other every day — and those rooms are all on WhatsApp and Instagram.
+    </p>
+
+    <div class="plays">
+
+      <div class="play">
+        <div class="n">01 · THE REAL CHANNEL</div>
+        <h4>College WhatsApp groups</h4>
+        <p>This is the distribution network in India and it isn't for sale. Every year group, every hostel floor, every department has one, and a link posted by a member outperforms any ad you could run.</p>
+        <div class="do"><b>Do this</b><span>Find one person in each year who'll post it, not one person overall. A message from a stranger gets ignored; from a classmate it gets installed.</span></div>
+      </div>
+
+      <div class="play">
+        <div class="n">02 · REACH</div>
+        <h4>Local college meme pages</h4>
+        <p>Lucknow college meme accounts have the exact audience, and their rates are low or nothing for something genuinely local. The content writes itself: eight hours, twelve percent battery, nobody to talk to.</p>
+        <div class="do"><b>Do this</b><span>Give them the joke, not a poster. Make the app the punchline rather than the subject.</span></div>
+      </div>
+
+      <div class="play">
+        <div class="n">03 · PEOPLE</div>
+        <h4>Two ambassadors per college</h4>
+        <p>Students will do this for status rather than money — a title, early access, and their name attached to something new. Two committed people beat a hundred passive installs.</p>
+        <div class="do"><b>Do this</b><span>Ask them for one specific thing: post their own journey to their group three days before every trip home.</span></div>
+      </div>
+
+      <div class="play">
+        <div class="n">04 · PLACE</div>
+        <h4>Stickers where people are already waiting</h4>
+        <p>Charbagh's reservation queue, hostel notice boards, the wall by the mess. Nobody in those places has anything to do, which is precisely the state the app is for.</p>
+        <div class="do"><b>Do this</b><span>Print the join code from the invite screen. Ask before putting anything on railway property — don't get the app associated with defacement.</span></div>
+      </div>
+
+      <div class="play">
+        <div class="n">05 · TIMING</div>
+        <h4>Freshers' week is the whole year</h4>
+        <p>First-years arriving is the single densest moment: maximum travel, maximum loneliness, and a cohort that will keep travelling this route for three more years.</p>
+        <div class="do"><b>Do this</b><span>Put everything you have into that fortnight and treat the rest of the year as maintenance.</span></div>
+      </div>
+
+      <div class="play">
+        <div class="n">06 · STORY</div>
+        <h4>Say why you built it</h4>
+        <p>"I was bored and alone on the Lucknow Mail and built something about it" is a better pitch than any feature list, and it's free. It also makes people forgive an empty first night.</p>
+        <div class="do"><b>Do this</b><span>Post it once on r/lucknow and r/indianrailways with an honest note that it's new and probably empty on your train.</span></div>
+      </div>
+
+      <div class="play">
+        <div class="n">07 · LOOP</div>
+        <h4>Ask for the return journey</h4>
+        <p>Everybody going home is coming back. Getting the return trip added at the end of the first one doubles usage per person and costs nothing to build.</p>
+        <div class="do"><b>Do this</b><span>Ask once, on arrival, while they're still holding the phone at New Delhi.</span></div>
+      </div>
+
+      <div class="play">
+        <div class="n">08 · VOICES</div>
+        <h4>Small local creators, not big ones</h4>
+        <p>A Lucknow student with eight thousand followers is worth more here than someone national with a million, because their audience is literally on your train.</p>
+        <div class="do"><b>Do this</b><span>Offer nothing but the app and a genuine ask. At this size, national reach is wasted spend anyway.</span></div>
+      </div>
+
+    </div>
+
+    <div class="warn">
+      <h4>How you describe it decides what it becomes</h4>
+      <p>
+        Don't market this as meeting strangers — it worries students and alarms the parents paying their fees.
+        Don't market it as dating either, because you'll get dating users and they will drive out everybody else;
+        the people you acquire first define what the app turns into, permanently. Lead with the boredom rather
+        than the loneliness: nobody downloads something that tells them they have no friends, but everybody
+        recognises eight hours with a dying battery and nothing to do. And stay specific — "for the Lucknow Mail"
+        is a real thing a real person is on tonight, while "for travellers" is nothing at all.
+      </p>
+    </div>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="eyebrow">Scale</div>
+    <h2>One route, without locking anybody out</h2>
+    <p class="intro">
+      You're right, and it changes what I said earlier. Restricting the <b>app</b> to a corridor would mean a
+      person who finds you on Twitter hits a wall, you can't show it to anyone outside Uttar Pradesh, and
+      every new city needs a switch flipped. So don't restrict the app.
+      <b>Concentrate the marketing instead, and let the product go anywhere.</b>
+    </p>
+
+    <div class="plays">
+      <div class="play">
+        <div class="n">01 · THE CORRECTION</div>
+        <h4>Focus the effort, not the software</h4>
+        <p>Anyone in the country can install Safar and add any train. What stays concentrated is where you spend your fortnight of promotion — because density is what makes it work, and density only happens where you push.</p>
+        <div class="do"><b>Do this</b><span>Ship nationally, market to Lucknow. Nobody outside ever sees a restriction, and nobody inside sees an empty train.</span></div>
+      </div>
+
+      <div class="play">
+        <div class="n">02 · TRAVELS FREE</div>
+        <h4>Most of it already works anywhere</h4>
+        <p>Halt times, platforms and durations come from the public timetable, so that screen works on any train in India from day one. The waiting room and the private note need no other users at all.</p>
+        <div class="do"><b>Do this</b><span>Hand-write the halt tips for your route only. Everywhere else shows the times without the commentary — thinner, not broken.</span></div>
+      </div>
+
+      <div class="play">
+        <div class="n">03 · HONESTY</div>
+        <h4>An off-route screen, not a wall</h4>
+        <p>Someone from Bhopal gets told the truth — this route isn't live, here's the count, here's what turns it on — plus the parts that work regardless. See the Off route mode in the prototype.</p>
+        <div class="do"><b>Do this</b><span>Make the threshold public. "Twenty-three more people" is a target somebody can act on; "coming soon" is not.</span></div>
+      </div>
+
+      <div class="play">
+        <div class="n">04 · EXPANSION</div>
+        <h4>Grow on a hub, never at random</h4>
+        <p>Every student corridor you add next should end at Delhi — Patna, Kota, Varanasi, Gorakhpur. Each new route reuses the Delhi-side population you already have instead of starting from nothing.</p>
+        <div class="do"><b>Do this</b><span>Let the waiting counts choose the order. That list is real demand data, and it costs nothing to collect.</span></div>
+      </div>
+
+      <div class="play">
+        <div class="n">05 · THE TWITTER ANSWER</div>
+        <h4>Demo the mechanic, not the crowd</h4>
+        <p>What's worth showing has nothing to do with how many people are aboard: the blurred profile resolving on a mutual unlock, the yellow screen when somebody joins an empty train, the halt guide at 2am with no signal.</p>
+        <div class="do"><b>Do this</b><span>Record those three. Nobody demonstrates a messaging app by filming an empty inbox.</span></div>
+      </div>
+    </div>
+
+    <p class="intro" style="margin-top:26px">
+      The one thing genuinely lost by going national early is the excuse. With no restriction, an empty train
+      is the product's fault rather than the map's — which is exactly why the night-one screen had to be built
+      first, and why it was worth building properly.
+    </p>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="eyebrow">Safety</div>
+    <h2>Moderation when there is no moderator</h2>
+    <p class="intro">
+      You have no team and no budget, and the report that matters will arrive at three in the morning
+      somewhere past Tundla. So reporting cannot mean joining a queue. <b>Every report has to solve the
+      reporter's problem instantly, by itself</b> — and a human looks at it whenever you next have time.
+    </p>
+
+    <div class="costwrap">
+      <table class="dt">
+        <thead><tr><th>Trigger</th><th>What happens</th><th>Decided by</th></tr></thead>
+        <tbody>
+          <tr><td>1 report</td><td>That person is hidden from the reporter permanently, in both directions, on every future journey</td><td class="keep">Instantly, automatic</td></tr>
+          <tr><td>2 reports</td><td>Different people, same journey — they stop appearing to anyone on that train</td><td class="keep">Instantly, automatic</td></tr>
+          <tr><td>3 reports</td><td>Different people, any time — account suspended and invisible everywhere</td><td>Automatic, you review later</td></tr>
+          <tr><td>New account</td><td>Under three journeys and already reported once — suspended straight away</td><td>Automatic, you review later</td></tr>
+          <tr><td>Anything involving a minor</td><td>Immediate suspension, no threshold</td><td>Automatic, you review same day</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <p class="intro" style="margin-top:26px">
+      <b>Prevention is cheaper than review.</b> There is no free way to check a PNR — the official railway API
+      is expensive and restricted, and the scrapers that wrap it are unreliable — so version one does not verify
+      tickets at all. Anyone can claim any train. Two limits carry the weight instead: a new account can start
+      at most three conversations per journey, and cannot send links until it has a few journeys behind it.
+      Those two rules kill spraying and scams without a single human decision, and both are enforced in the
+      database rather than the app.
+    </p>
+
+    <div class="warn">
+      <h4>The rule that's specific to a train</h4>
+      <p>
+        On a dating app the person you report cannot reach you. On the Lucknow Mail they are twenty metres away
+        for the next six hours. That single fact should shape the whole flow: never tell the reported person a
+        report happened while the journey is still running, make the hiding silent and mutual so it simply looks
+        as though the other person left, and hold any suspension notice until after Delhi. A retaliation risk
+        that most apps can treat as theoretical is, here, a person walking down the aisle.
+      </p>
+    </div>
+
+    <p class="intro" style="margin-top:26px">
+      <b>One thing to check before you ship:</b> the prototype shows 139 for the railway helpline and 112 for
+      emergencies. Those match my understanding of the current Indian numbers, but a wrong number inside a
+      safety flow is worse than no number at all — confirm both against an official source, and consider
+      whether to surface the RPF number separately.
+    </p>
+  </div>
+</section>
+
+<section class="sec">
+  <div class="wrap">
+    <div class="eyebrow">Decided</div>
+    <h2 id="decidedHead">Settled, and built into this version</h2>
+    <div class="settled">
+      <div class="scell"><div class="k">Sign-up</div><div class="d">Google, two taps</div><p>No password, no OTP, no college email. Name and photo come across automatically.</p></div>
+      <div class="scell"><div class="k">Age</div><div class="d">Hard 18+ gate</div><p>Self-declared date of birth. Not verifiable yet, and that's an accepted trade for now.</p></div>
+      <div class="scell"><div class="k">Language</div><div class="d">English only</div><p>No picker, no second string table. A scope call for version one — see the note below on who that quietly selects for.</p></div>
+      <div class="scell"><div class="k">Offline</div><div class="d">Phone first, sync later</div><p>Messages queue locally. The halt guide and the note work with no signal at all.</p></div>
+      <div class="scell"><div class="k">Delays</div><div class="d">Nothing expires early</div><p>A chat dies nine hours after the last message, not on the timetable.</p></div>
+      <div class="scell"><div class="k">Empty trains</div><div class="d">A real screen, not an error</div><p>Countdown, halt guide, waiting room, private note, and one way to recruit the seat opposite.</p></div>
+      <div class="scell"><div class="k">Fake users</div><div class="d">Never</div><p>On a train people can look around and count. One invented profile would end it.</p></div>
+      <div class="scell"><div class="k">Tickets</div><div class="d">Not verified in v1</div><p>No free PNR API exists. Rate limits in the database do that job instead — three conversations per journey and no links for new accounts.</p></div>
+      <div class="scell"><div class="k">Route</div><div class="d">Lucknow ⇄ Delhi</div><p>Kanpur, Etawah, Tundla, Aligarh, Ghaziabad. One corridor, both directions.</p></div>
+    </div>
+
+    <div class="warn" style="border-color:var(--ink)">
+      <h4 style="color:var(--ink)">What English-only costs, so it's on the record</h4>
+      <p>
+        Dropping the language picker halves the copy work and removes a decision from the welcome screen,
+        which is the right call for a first version. The thing to keep an eye on is who it quietly selects
+        for: a student who thinks in Hindi is more likely to be the one travelling alone and knowing nobody
+        in Delhi, and an English-only interface skews the early user base toward metro, English-medium
+        students — the people who are already the least lonely on that train. It is not a reason to build
+        Hindi now. It is a reason to watch, once there are real users, whether the ones signing up are the
+        ones this was built for.
+      </p>
+    </div>
+  </div>
+</section>
+
+<footer class="foot">
+  <div class="wrap">
+    SAFAR · CONCEPT PROTOTYPE v1.0 · NOT A REAL SERVICE · EVERY PERSON AND MESSAGE SHOWN IS INVENTED · JOIN CODE IS ILLUSTRATIVE · STORAGE FIGURES ARE ESTIMATES · HELPLINE NUMBERS MUST BE VERIFIED BEFORE ANY REAL USE
+    <br><br>
+    DISPLAY TYPE: JANGKUY BY AZKIA FADHLAN (@YUKKAZZU) UNDER ATAS CREATIVE PROJECT (@ATAS.CREATIVE) · FREE FOR PERSONAL AND COMMERCIAL USE
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+  var root=document.querySelector('.screen');
+  var flow=document.getElementById('flow');
+
+  var step=0, LAST=4;
+  var dots=document.getElementById('dots').children;
+  var backBtn=document.getElementById('flowBack');
+  function renderStep(){
+    flow.querySelectorAll('.step').forEach(function(s){ s.classList.toggle('on', Number(s.dataset.step)===step); });
+    for(var i=0;i<dots.length;i++) dots[i].classList.toggle('done', i<=step);
+    backBtn.classList.toggle('show', step>0 && step<LAST);
+    flow.querySelector('.flowbody').scrollTop=0;
+  }
+
+  /* ---------------- notes ---------------- */
+  var NOTES={
+    signup:{kick:"Sign-up",title:"Two taps, then you're aboard",
+      body:"Google, date of birth, two lines, your train. No password, no OTP, no college email, and now no language picker either. Note the last screen — it tells a first user straight away that they're alone, rather than letting them find out.",
+      list:["Dropping the language step took the welcome screen down to a single decision.","Google Sign-In skips SMS charges, which is what usually breaks a free build.","The age gate is self-declared — accepted as a trade for now.","Step three shows the profile exactly as strangers will see it, while it's still editable."]},
+    "empty:trip":{kick:"Night one · Trip",title:"Being first is a status, not an error",
+      body:"The screen leads with a number — 01, first aboard — rather than a shrug. Underneath it are three things that work with nobody else present, and one button that does the only thing that actually helps.",
+      list:["The countdown still runs. The journey is real even if the app is empty.","Halt guide and waiting room both work with no signal and no other users.","One notification, ever: when a second person joins. Nothing else.","The green box is a promise not to fake anybody, stated in the product."]},
+    "empty:onboard":{kick:"Night one · Onboard",title:"Honest about tonight, honest about the route",
+      body:"An empty list is a dead end, so the screen widens the frame: other trains on this corridor, other days, a weekly count. It's proof the app works without pretending anyone is sitting beside you.",
+      list:["Match on the train first, then the route, then the week.","No fake profiles, ever — on a train that lie is checkable in ten seconds.","The invite is the primary action here, because it's the only real fix.","Adding a future journey is one tap from this screen."]},
+    "empty:adda":{kick:"Night one · Adda",title:"A group of one is a person on a platform",
+      body:"Adda stays locked until three people are aboard, and says so with a progress bar rather than hiding. You can still post a plan — it becomes the first thing the second person sees when they arrive.",
+      list:["A visible threshold turns an empty feature into a countable goal.","Plans posted early make a train look like somewhere worth being.","No group is created with one member — that's a screen nobody returns to.","The invite button sits directly under the thing it unblocks."]},
+    "empty:chats":{kick:"Night one · Chats",title:"Something to do that isn't talking",
+      body:"The private note is deliberately small: one line, stored on the phone, never uploaded. It costs nothing to run, works with no signal, and gives a solo user a reason to open the app that doesn't depend on anyone else showing up.",
+      list:["Shown back to you on your next trip on the same route — a reason to return.","Never uploaded, so it costs nothing and raises no privacy question.","The last line is a promise not to nag when the app has nothing to offer.","Ten waiting-room lines is enough for one journey, not enough for ten."]},
+    "full:trip":{kick:"Busy · Trip",title:"One journey, one countdown",
+      body:"The same screen once the train has people on it. Running forty minutes late, which is ordinary on this route and changes nothing about when chats expire.",
+      list:["Delay is shown plainly and affects no timers.","Your coach is stored but never shown. It's the matching key, not a public field.","The halt guide stays useful whether there are two people aboard or twenty.","Sending your journey to someone off the app works even if Safar fails."]},
+    "full:onboard":{kick:"Busy · Onboard",title:"A face, a name, two lines",
+      body:"Everyone here added 12229 and switched themselves on. Tickets are not verified in version one — there is no free way to check a PNR — so the limits below do that job instead. The two lines still do the real work, making it about intent rather than only appearance.",
+      list:["No age, no college, no coach anywhere in this list.","Every card carries its lock state, so the rule is visible before you tap.","Safety rests on mutual unlock, one-tap block, and automatic report thresholds.","New accounts get three conversations per journey and no links — enforced in the database."]},
+    "full:adda":{kick:"Busy · Adda",title:"Nobody approaches a stranger alone",
+      body:"Joining five people at a ten-minute halt is a far smaller ask than meeting one person. Kanpur Central is the big one on this route — ten minutes, and everyone is still awake.",
+      list:["Group-first is the strongest defence against drifting into a dating app.","Halt timings come from the real timetable.","Anyone can start one. Three fields, no approval.","Joining is visible only to people on the same train."]},
+    tour:{kick:"First run",title:"Teach one thing, at the moment it matters",
+      body:"The tutorial doesn't run at sign-up. It waits until the list actually has people in it, because explaining “unlock” to somebody sitting alone on an empty train is explaining nothing. Three spotlights, one idea, then it never appears again.",
+      list:["It teaches only the non-obvious rule. Countdowns and chats explain themselves.","Spotlights sit on the real interface, not on illustrations of it.","Skip is offered on every step and remembered permanently.","Three steps is the ceiling — a fourth is where people start tapping past it."]},
+    "off:trip":{kick:"Off route",title:"Nothing is locked to a city",
+      body:"Anyone anywhere can install Safar and add any train. What's concentrated is the marketing, not the product — so a person who finds you on Twitter from Bhopal gets an honest screen and a way to change it, rather than a wall or a lie.",
+      list:["Halt times come from the public timetable, so that screen works on any train in India.","A visible threshold turns “nobody's here” into a target people can campaign for.","The waiting count tells you where to expand next, from real demand rather than a guess.","Showing a live route at the bottom proves the app works — just not here yet."]},
+    "join:0":{kick:"Someone joins · 1 of 3",title:"The only notification you get to send",
+      body:"On an empty train Safar stays silent. This is the single exception, and it fires the second another ticket-holder adds the same service. Spending it on anything less would be spending it on nothing.",
+      list:["It names the train, not the app — the subject line is the useful part.","It names the person, because her name and face are public anyway.","No badge counts, no digests, no “people near you” — those are how you get uninstalled.","Both phones get it at the same second, so neither person is the one being approached."]},
+    "join:1":{kick:"Someone joins · 2 of 3",title:"Symmetric, so nobody has to be brave",
+      body:"The moment screen shows exactly what's public — face, name, two lines — and offers one action. Ishita is seeing an identical screen with your name on it, which is the entire trick: neither of you is the one who made the first move.",
+      list:["One action only. A screen with three buttons is a screen nobody acts on.","Yellow, not pink — a sibling to the waiting room, a different feeling.","Nothing is unlocked here. Coach, college and contact still take two taps.","“Say hi” opens the chat already started, rather than a blank box."]},
+    "join:2":{kick:"Someone joins · 3 of 3",title:"Two people is a different app",
+      body:"The jump from one to two is the only number that matters on night one. A coach room exists, adda has a visible target, and the person who was alone forty minutes ago now has a reason to still be holding the phone at Kanpur.",
+      list:["Adda's threshold is public, so two people know exactly what they're one short of.","The coach room is created on the second join, not the first.","Nothing about the privacy model relaxes because the train got busier.","This is the screen to instrument first — if people drop here, nothing else matters."]},
+    "full:chats":{kick:"Busy · Chats",title:"Nine hours after the last word",
+      body:"Expiry hangs off the conversation, not the timetable — which handles delays and needs no live train feed, so it also costs nothing to run.",
+      list:["The yellow bar in a thread is the offline state.","Three rooms: one-to-one, your coach, the whole train.","No read receipts. Nobody owes a stranger a reply.","Unlocking before Delhi is the only way anything survives."]}
+  };
+  var nKick=document.getElementById('nKick'), nTitle=document.getElementById('nTitle'),
+      nBody=document.getElementById('nBody'), nList=document.getElementById('nList');
+  function note(k){
+    var n=NOTES[k]; if(!n) return;
+    nKick.textContent=n.kick; nTitle.textContent=n.title; nBody.textContent=n.body;
+    nList.innerHTML='';
+    n.list.forEach(function(t){ var li=document.createElement('li'); li.textContent=t; nList.appendChild(li); });
+  }
+
+  /* ---------------- mode + panes ---------------- */
+  var variant='empty', tab='trip';
+  var mSignup=document.getElementById('mSignup'), mEmpty=document.getElementById('mEmpty'),
+      mJoin=document.getElementById('mJoin'), mOff=document.getElementById('mOff'),
+      mApp=document.getElementById('mApp'), mTour=document.getElementById('mTour');
+  var chatDot=document.getElementById('chatDot');
+  var joinseq=document.getElementById('joinseq');
+
+  var beat=0, BEATS=3;
+  function renderBeat(){
+    joinseq.querySelectorAll('.beat').forEach(function(b){ b.classList.toggle('on', Number(b.dataset.beat)===beat); });
+    note('join:'+beat);
+  }
+
+  function render(){
+    root.querySelectorAll('.pane').forEach(function(p){
+      p.classList.toggle('on', p.dataset.pane===tab && p.dataset.variant===variant);
+    });
+    root.querySelectorAll('.tab').forEach(function(t){ t.setAttribute('aria-selected', String(t.dataset.tab===tab)); });
+    root.querySelectorAll('.body').forEach(function(b){ b.scrollTop=0; });
+    chatDot.classList.toggle('hide', variant==='empty');
+    note(variant+':'+tab);
+  }
+  var tourMode=false;
+  function setMode(m){
+    tourMode = (m==='tour');
+    flow.classList.toggle('on', m==='signup');
+    joinseq.classList.toggle('on', m==='join');
+    mSignup.setAttribute('aria-pressed', String(m==='signup'));
+    mEmpty.setAttribute('aria-pressed', String(m==='empty'));
+    mJoin.setAttribute('aria-pressed', String(m==='join'));
+    mOff.setAttribute('aria-pressed', String(m==='off'));
+    mApp.setAttribute('aria-pressed', String(m==='full' && !tourMode));
+    mTour.setAttribute('aria-pressed', String(tourMode));
+    if(m!=='tour'){ tour.classList.remove('on'); }
+    if(m==='signup'){ step=0; renderStep(); note('signup'); return; }
+    if(m==='join'){ beat=0; renderBeat(); return; }
+    if(m==='tour'){ variant='full'; tab='onboard'; render(); note('tour'); startTour(); return; }
+    variant=m;
+    if(m==='off') tab='trip';   /* off-route only has the one screen */
+    render();
+  }
+  mSignup.addEventListener('click', function(){ setMode('signup'); });
+  mEmpty.addEventListener('click', function(){ setMode('empty'); });
+  mJoin.addEventListener('click', function(){ setMode('join'); });
+  mOff.addEventListener('click', function(){ setMode('off'); });
+  mApp.addEventListener('click', function(){ setMode('full'); });
+  mTour.addEventListener('click', function(){ setMode('tour'); });
+
+  /* route campaign bar: 17 of 40 */
+  (function(){
+    var t=document.getElementById('routeTrack');
+    for(var i=0;i<40;i++){
+      var seg=document.createElement('i');
+      if(i<17) seg.className='lit';
+      t.appendChild(seg);
+    }
+  })();
+
+  /* first-run tour — fires the first time the list actually has people in it,
+     because there is no point teaching "unlock" to someone with nobody to unlock. */
+  var tour=document.getElementById('tour'), hole=document.getElementById('tourHole'), tcard=document.getElementById('tourCard');
+  var TOUR=[
+    {sel:'[data-variant="full"][data-pane="onboard"] .pcard',
+     title:"This is all anyone gets",
+     body:"A face, a first name, and two lines she wrote herself. Nothing on this card came from her ticket."},
+    {sel:'[data-variant="full"][data-pane="onboard"] .pcard .lockchip',
+     title:"Locked means never sent",
+     body:"Her coach, seat, college and Instagram aren't hidden on your phone. They were never sent to it in the first place."},
+    {sel:'[data-variant="full"][data-pane="onboard"] .notice.pink',
+     title:"It takes two taps",
+     body:"You can ask to unlock and she is never told you asked. It opens only if she asks too — and then you both get everything at the same moment."}
+  ];
+  var tstep=0;
+  function placeTour(){
+    var t=TOUR[tstep], el=root.querySelector(t.sel);
+    if(!el){ tour.classList.remove('on'); return; }
+    /* bring the target into view before measuring, or the spotlight lands off-screen */
+    var scroller=el.closest('.body');
+    if(scroller){
+      var er=el.getBoundingClientRect(), br=scroller.getBoundingClientRect();
+      scroller.scrollTop += (er.top-br.top) - (br.height/2 - er.height/2);
+    }
+    var r=el.getBoundingClientRect(), sr=root.getBoundingClientRect(), pad=7;
+    var top=r.top-sr.top-pad, left=r.left-sr.left-pad, w=r.width+pad*2, h=r.height+pad*2;
+    hole.style.top=top+'px'; hole.style.left=left+'px';
+    hole.style.width=w+'px'; hole.style.height=h+'px';
+    hole.style.borderRadius=(el.classList.contains('lockchip')?14:22)+'px';
+    document.getElementById('tourN').textContent=(tstep+1)+' of '+TOUR.length;
+    document.getElementById('tourTitle').textContent=t.title;
+    document.getElementById('tourBody').textContent=t.body;
+    document.querySelector('[data-tour-next]').textContent = tstep===TOUR.length-1 ? 'Start' : 'Got it';
+    /* card goes under the spotlight unless that would run off the bottom */
+    var cardH=tcard.offsetHeight||150;
+    var below=top+h+14;
+    tcard.style.top=(below+cardH>sr.height-30 ? Math.max(16, top-cardH-14) : below)+'px';
+  }
+  function startTour(){ tstep=0; tour.classList.add('on'); placeTour(); requestAnimationFrame(placeTour); }
+
+  tour.addEventListener('click', function(e){
+    if(e.target.closest('[data-tour-skip]')){ tour.classList.remove('on'); return; }
+    if(e.target.closest('[data-tour-next]')){
+      if(tstep < TOUR.length-1){ tstep++; placeTour(); }
+      else { tour.classList.remove('on'); }
+      return;
+    }
+  });
+
+  /* report flow */
+  var rstep=0;
+  function renderReport(){
+    root.querySelectorAll('.rstep').forEach(function(s){ s.classList.toggle('on', Number(s.dataset.rstep)===rstep); });
+    document.getElementById('repTitle').textContent = ['What happened?','Before you do','Reported'][rstep];
+    document.getElementById('repSub').textContent = ['She is not told any of this','Here is exactly what happens','Nothing else is needed from you'][rstep];
+    root.querySelector('[data-overlay="report"] .ovbody').scrollTop=0;
+  }
+
+  joinseq.addEventListener('click', function(e){
+    if(e.target.closest('#joinRestart')){ beat=0; renderBeat(); return; }
+    if(e.target.closest('[data-beat-next]')){ if(beat<BEATS-1){ beat++; renderBeat(); } return; }
+  });
+
+  function closeAll(){ root.querySelectorAll('.sheet,.overlay,.qroom').forEach(function(x){ x.classList.remove('on'); }); }
+
+  /* ---------------- unlock ---------------- */
+  var unlocked=false;
+  function setUnlocked(state){
+    unlocked=state;
+    var btn=document.getElementById('unlockBtn');
+    root.querySelectorAll('[data-secret]').forEach(function(v){
+      if(state){ v.textContent=v.dataset.secret; v.classList.remove('hidden'); v.classList.add('shown'); }
+      else { v.textContent='Hidden until unlocked'; v.classList.add('hidden'); v.classList.remove('shown'); }
+    });
+    btn.textContent = state ? 'Unlocked · tap to close again' : 'Ask to unlock';
+    btn.classList.toggle('btn-pink', !state);
+    document.getElementById('lockLabel').textContent = state ? 'Unlocked · you both agreed' : 'Locked · she sees yours locked too';
+    document.querySelector('#unlockNote p').textContent = state
+      ? 'She unlocked back, so you each got the same five fields at the same moment. Either of you can close it again.'
+      : 'She has to tap unlock too. Until then she learns nothing about you either — not even that you looked.';
+  }
+
+  /* ---------------- waiting room (written for this prototype) ---------------- */
+  var LINES=[
+    "Nobody interesting was ever on schedule.",
+    "The best meal of your life will be eaten standing up, on a platform, at two in the morning.",
+    "You didn't leave home to become someone. You left to find out who you already were.",
+    "Sleep is for people with return tickets.",
+    "Take the window seat. Say nothing about your luck.",
+    "The train doesn't care where you're from. Neither does anyone sitting on it.",
+    "Go hungry long enough and somebody will feed you. That is the entire system.",
+    "Cheap chai, bad sleep, good company. Three out of three.",
+    "Distance is the only thing that has ever made you honest.",
+    "Everyone on this train is going somewhere they're nervous about. Including you."
+  ];
+  var qi=-1;
+  function nextLine(){
+    var n; do{ n=Math.floor(Math.random()*LINES.length); } while(LINES.length>1 && n===qi);
+    qi=n;
+    document.getElementById('qText').textContent='“'+LINES[n]+'”';
+    document.getElementById('qNo').textContent='No. '+String(n+1).padStart(2,'0')+' of '+LINES.length;
+  }
+
+  /* ---------------- illustrative join code ---------------- */
+  (function buildQR(){
+    var svg=document.getElementById('qr'), N=25, seed=12229;
+    function rnd(){ seed=(seed*1103515245+12345)&0x7fffffff; return seed/0x7fffffff; }
+    function finder(x,y){
+      for(var i=-1;i<8;i++) for(var j=-1;j<8;j++){
+        var on = (i>=0&&i<7&&j>=0&&j<7) && (i===0||i===6||j===0||j===6||(i>=2&&i<=4&&j>=2&&j<=4));
+        if(on) rect(x+i,y+j);
+      }
+    }
+    function rect(x,y){
+      var r=document.createElementNS('http://www.w3.org/2000/svg','rect');
+      r.setAttribute('x',x); r.setAttribute('y',y);
+      r.setAttribute('width',1); r.setAttribute('height',1);
+      svg.appendChild(r);
+    }
+    function inFinder(x,y){
+      return (x<8&&y<8) || (x>N-9&&y<8) || (x<8&&y>N-9);
+    }
+    for(var y=0;y<N;y++) for(var x=0;x<N;x++){
+      if(inFinder(x,y)) continue;
+      if(rnd()>0.52) rect(x,y);
+    }
+    finder(0,0); finder(N-7,0); finder(0,N-7);
+  })();
+
+  /* ---------------- events ---------------- */
+  flow.addEventListener('click', function(e){
+    var el;
+    if((el=e.target.closest('#enterApp'))){ setMode('empty'); return; }
+    if((el=e.target.closest('[data-next]'))){ if(step<LAST){ step++; renderStep(); } return; }
+    if((el=e.target.closest('.chip'))){
+      if(el.hasAttribute('aria-pressed')){
+        el.parentElement.querySelectorAll('.chip').forEach(function(c){ c.setAttribute('aria-pressed','false'); });
+        el.setAttribute('aria-pressed','true');
+      }
+      return;
+    }
+  });
+  backBtn.addEventListener('click', function(){ if(step>0){ step--; renderStep(); } });
+
+  root.addEventListener('click', function(e){
+    if(flow.contains(e.target)) return;
+    var el;
+    if((el=e.target.closest('[data-join]'))){ e.stopPropagation(); el.classList.add('done'); el.textContent='Going'; return; }
+    if((el=e.target.closest('[data-toggle]'))){ el.setAttribute('aria-pressed', el.getAttribute('aria-pressed')==='true'?'false':'true'); return; }
+    if((el=e.target.closest('#qNext'))){ nextLine(); return; }
+    if((el=e.target.closest('[data-unlock]'))){ setUnlocked(!unlocked); return; }
+    if((el=e.target.closest('[data-report]'))){ closeAll(); rstep=0; renderReport(); root.querySelector('[data-overlay="report"]').classList.add('on'); return; }
+    if((el=e.target.closest('[data-rnext]'))){ if(rstep<2){ rstep++; renderReport(); } return; }
+    if((el=e.target.closest('[data-report-back]'))){ if(rstep>0){ rstep--; renderReport(); } else closeAll(); return; }
+    if((el=e.target.closest('[data-safety]'))){ root.querySelector('[data-sheetname="safety"]').classList.add('on'); return; }
+    if((el=e.target.closest('[data-close]'))){ closeAll(); return; }
+    if((el=e.target.closest('[data-thread]'))){ closeAll(); root.querySelector('[data-overlay="thread"]').classList.add('on'); return; }
+    if((el=e.target.closest('[data-halts]'))){ closeAll(); root.querySelector('[data-overlay="halts"]').classList.add('on'); return; }
+    if((el=e.target.closest('[data-journal]'))){ root.querySelector('[data-sheetname="journal"]').classList.add('on'); return; }
+    if((el=e.target.closest('[data-qroom]'))){ nextLine(); root.querySelector('[data-qroomel]').classList.add('on'); return; }
+    if((el=e.target.closest('[data-person]'))){ setUnlocked(false); root.querySelector('[data-sheetname="person"]').classList.add('on'); return; }
+    if((el=e.target.closest('[data-sheet]'))){ root.querySelector('[data-sheetname="'+el.dataset.sheet+'"]').classList.add('on'); return; }
+    if((el=e.target.closest('[data-tab]'))){ closeAll(); tab=el.dataset.tab; render(); return; }
+    if((el=e.target.closest('[data-goto]'))){ closeAll(); tab=el.dataset.goto; render(); return; }
+    if((el=e.target.closest('.chip'))){
+      if(el.hasAttribute('aria-pressed')){
+        el.parentElement.querySelectorAll('.chip').forEach(function(c){ c.setAttribute('aria-pressed','false'); });
+        el.setAttribute('aria-pressed','true');
+      }
+      return;
+    }
+    if(e.target.classList.contains('sheet')) closeAll();
+  });
+
+  root.addEventListener('keydown', function(e){
+    if(e.key!=='Enter' && e.key!==' ') return;
+    var el=e.target.closest('[role="button"]');
+    if(!el) return;
+    e.preventDefault(); el.click();
+  });
+
+  renderStep(); render(); nextLine();
+})();
+</script>
