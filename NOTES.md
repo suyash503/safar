@@ -32,12 +32,12 @@ they have no friends.
 |---|---|
 | Clickable prototype (6 modes) | **Done** — `index.html` |
 | Product & design decisions | **Done** — see below |
-| Database schema | **Done** — all 17 sections applied to Supabase and verified |
+| Database schema | Applied — but **§17's age-gate trigger is not live**, see Open problem |
 | `pg_cron` sweep | **Done** — `safar-sweep`, hourly |
 | Google OAuth — web client | **Done** in Google Console + Supabase |
 | Google OAuth — Android client | **Deferred** (needs a build for the SHA-1) |
-| Expo app | **Scaffolded** — SDK 57, expo-router, sign-in / age gate / stub Onboard |
-| Google Sign-In in the app | Written, **not yet run on a device** ← next |
+| Expo app | **Runs on a real device** — SDK 57, expo-router |
+| Google Sign-In in the app | **Working end to end**, verified on a Redmi Note 12 |
 | Privacy policy / Play Data Safety | Not started |
 
 **Verified state of the database** (re-run any time to confirm nothing drifted):
@@ -68,6 +68,52 @@ Section 16 fixes this for `shares_journey` and `is_blocked_with`. Add the grant 
 same breath as any future policy that calls a helper.
 
 ---
+
+## Open problem — the age gate is not enforced
+
+**The project now lives at `C:\dev\safar`**, not in OneDrive. The OneDrive copy is
+stale; treat it as a backup and delete it once this is pushed.
+
+On 2026-08-15, from the app, a signed-in account with no `dob` inserted a journey
+**successfully**. Section 17 says that must raise `set your date of birth before
+adding a journey`. The schema file is correct — the trigger simply is not in the
+live database, so nothing is enforcing 18+ right now.
+
+Next session, run in the SQL editor:
+
+```sql
+select tgname from pg_trigger
+where tgrelid = 'public.journeys'::regclass and not tgisinternal;
+select id, dob from public.profile_private;
+select id, service_code, travel_date from public.journeys;
+```
+
+If `journeys_adult` is absent, re-run §17 and delete the journey row that should
+never have existed. Then re-verify — the "verified" line above was trusted and was
+wrong, which is the actual lesson.
+
+## How to run the app
+
+```
+cd C:\dev\safar
+npx expo start          # then the app on the phone reloads from the laptop
+```
+
+The debug build is already installed on the device. Rebuild only when native code
+or `app.json` changes: `npx expo run:android`.
+
+**Windows things that cost hours, all now fixed:**
+
+- **A space in the Windows username breaks the NDK.** `clang++.cmd` gets 8.3-mangled
+  to `CLANG_~1.CMD`, the wrapper loses the `++`, links as C, and every libc++ symbol
+  comes back undefined. Fixed with a junction: `C:\Android\Sdk` → the real SDK, and
+  `ANDROID_HOME` points at the junction. **This is the one that will come back** if
+  the SDK path is ever set back to the `C:\Users\Suyash Singh\...` original.
+- **Gradle's daemon would not start** — `AppData\Local\Temp` rejects AF_UNIX sockets,
+  which JDK 17 uses for the pipes behind every `Selector`. Fixed by pointing
+  `TMP`/`TEMP` at `C:\Users\Suyash Singh\.gradle-tmp`. Not yet made permanent.
+- `react-dom` must be pinned to `19.2.3` to match React, or a clean `npm install`
+  fails outright.
 
 ## The core mechanic — mutual unlock
 
@@ -232,10 +278,13 @@ Backend is finished and verified. Everything below is app work.
    `safar://`. `npm run typecheck` is clean and `expo config` resolves.
 2. Add `safar://auth/callback` to Supabase → Authentication → URL Configuration.
    **Not done — dashboard work, and sign-in fails until it is.**
-3. Google Sign-In — written in `lib/auth.ts` (PKCE, system browser, deep link back).
-   **Never run on a device.** Expo Go cannot do a custom scheme, so this needs a
-   development build: `npx expo run:android`, which also produces the debug SHA-1
-   the Android OAuth client wants.
+3. ~~Google Sign-In~~ — **done and verified on a device.** Two things were needed
+   beyond the obvious: `flowType: 'pkce'` on the Supabase client (the default is
+   implicit, which returns tokens in a URL fragment that never survives a deep
+   link), and a real route at `app/auth/callback.tsx` — Android delivers the
+   redirect to the app, so without that file expo-router shows "Unmatched Route".
+   Sign-in worked without registering any SHA-1, so the Android OAuth client is
+   still not set up; that bill comes due when sharing a build with other people.
 4. ~~Age gate writes `dob`~~ — done in `app/age.tsx`, an UPDATE not an INSERT.
    The journey exception is caught in `lib/errors.ts`, which matches on the two
    messages from §17 and routes back to the age screen. **Match on message text is

@@ -52,5 +52,10 @@ export const supabase = createClient(url, anonKey, {
     // No URL to parse in a native app — the deep link is handled by hand in
     // lib/auth.ts so we control what happens when the browser hands back.
     detectSessionInUrl: false,
+    // Not the default. Without this supabase-js uses the implicit flow, which
+    // returns tokens in the URL fragment — a fragment never survives the trip
+    // back through a deep link, so the app sees a callback with nothing in it.
+    // PKCE returns ?code=, which is what auth.ts and the callback screen read.
+    flowType: 'pkce',
   },
 });

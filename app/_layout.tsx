@@ -13,8 +13,11 @@ function Gate() {
   useEffect(() => {
     if (loading) return;
     const onSignIn = pathname === '/';
-    if (!session && !onSignIn) router.replace('/');
-    if (session && onSignIn) router.replace('/onboard');
+    // The callback screen finishes the sign-in itself; bouncing it back to the
+    // sign-in screen mid-exchange would drop the session on the floor.
+    const inAuthFlow = pathname.startsWith('/auth');
+    if (!session && !onSignIn && !inAuthFlow) router.replace('/');
+    if (session && (onSignIn || inAuthFlow)) router.replace('/onboard');
   }, [session, loading, pathname]);
 
   if (loading) {
