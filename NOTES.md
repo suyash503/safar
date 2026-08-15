@@ -301,8 +301,8 @@ Backend is finished and verified. Everything below is app work.
 
 1. ~~Scaffold the Expo app~~ — done. SDK 57, `expo-router`, `com.safar.app`, scheme
    `safar://`. `npm run typecheck` is clean and `expo config` resolves.
-2. Add `safar://auth/callback` to Supabase → Authentication → URL Configuration.
-   **Not done — dashboard work, and sign-in fails until it is.**
+2. ~~Add `safar://auth/callback` to Supabase → URL Configuration~~ — done. It belongs
+   in **Redirect URLs**, not Site URL.
 3. ~~Google Sign-In~~ — **done and verified on a device.** Two things were needed
    beyond the obvious: `flowType: 'pkce'` on the Supabase client (the default is
    implicit, which returns tokens in a URL fragment that never survives a deep
@@ -318,10 +318,13 @@ Backend is finished and verified. Everything below is app work.
 5. ~~Add a journey properly~~ — **done.** `app/journey.tsx` picks off the bundled
    timetable, `app/onboard.tsx` is the real screen now: your journey, then
    `onboard_list()` for the people on it, with the first-aboard state when there
-   are none. Still needs the rest of the corridor imported. ← **next**
+   are none. Still needs the rest of the corridor imported.
 6. Chat + offline outbox (local write first, `client_id` for idempotent retry)
-7. Editable profile screen for the rest of `profile_private`
+   ← **next, and the last big piece**
+7. ~~Editable profile screen~~ — **done**, `app/profile.tsx`, both halves.
 8. Privacy policy + Play Data Safety declaration
+9. Import the corridor timetable into `data/services.ts` from data.gov.in.
+10. Photo upload — needs Supabase Storage; the photo is Google's until then.
 
 **Before production:** remove `http://localhost:8000/**` from Supabase's redirect
 allowlist, and add the Google Play App Signing SHA-1 to the Android OAuth client.
@@ -330,11 +333,12 @@ allowlist, and add the Google Play App Signing SHA-1 to the Android OAuth client
 
 ## Known gaps
 
-- **Only `dob` gets collected.** Section 17 means every account now has a `profile_private`
-  row and the age gate is enforced in the database. But college, year, hometown and
-  Instagram are still never asked for anywhere, so unlocking currently reveals mostly
-  nulls. Needs an editable profile screen — filled in later, not during sign-up, which
-  stays at two taps.
+- ~~Only `dob` gets collected~~ — **closed.** `app/profile.tsx` fills in both halves:
+  first name, bio and tags on one side of a divider, college, year, hometown,
+  Instagram and phone on the other. Sign-up is still two taps; the profile is filled
+  in afterwards, never during. Empty fields save as null, so `unlocked_profile()`
+  returns nothing rather than blanks. The photo is still whatever Google gave us —
+  changing it needs Supabase Storage.
 - **`reports.chat_copy`** stores conversation snapshots permanently, outliving the expiry
   that governs everything else. Correct for a safety record; decide on redaction after
   review and state it in the privacy policy.
