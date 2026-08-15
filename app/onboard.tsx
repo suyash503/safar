@@ -143,6 +143,9 @@ export default function Onboard() {
             {journey ? 'Add another train' : 'Add the train you are on'}
           </Text>
         </Pressable>
+        <Pressable style={styles.quiet} onPress={() => router.push('/profile')}>
+          <Text style={styles.quietText}>Your profile</Text>
+        </Pressable>
         <Pressable style={styles.quiet} onPress={signOut}>
           <Text style={styles.quietText}>Sign out</Text>
         </Pressable>
