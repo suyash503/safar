@@ -732,3 +732,39 @@ end; $$;
 drop trigger if exists journeys_adult on public.journeys;
 create trigger journeys_adult before insert on public.journeys
   for each row execute function public.assert_adult();
+
+-- ============================================================================
+-- 18. SILENCE, ENFORCED RATHER THAN PROMISED
+-- ============================================================================
+-- unlocks was granted SELECT to authenticated, with a policy letting either party
+-- read the row. The row holds a_asked and b_asked as separate columns, so anyone
+-- running a modified client could see that the other person had asked — before
+-- asking themselves, and without ever asking at all.
+--
+-- The app only ever derived "mutual" from it, so nothing looked wrong. But that is
+-- the client being polite about a fact the server handed it, and the whole point
+-- of this design is that locked means never sent, not hidden after sending. Asking
+-- is the most sensitive thing in the product: it is the one moment where someone
+-- reveals interest in a stranger they are sharing a train with tonight.
+--
+-- So the row stops leaving the database. The only thing a client may learn is what
+-- it needs to draw the screen: whether *it* asked, and whether it is now mutual.
+
+revoke select on public.unlocks from authenticated;
+
+create or replace function public.unlock_state(other uuid, p_service text, p_date date)
+returns table (i_asked boolean, mutual boolean)
+language sql stable security definer set search_path = public as $$
+  select
+    case when auth.uid() < other then u.a_asked else u.b_asked end,
+    u.a_asked and u.b_asked
+  from unlocks u
+  where u.a_id = least(auth.uid(), other)
+    and u.b_id = greatest(auth.uid(), other)
+    and u.service_code = p_service
+    and u.travel_date  = p_date
+    and u.expires_at   > now();
+$$;
+
+revoke execute on function public.unlock_state(uuid, text, date) from public;
+grant  execute on function public.unlock_state(uuid, text, date) to authenticated;

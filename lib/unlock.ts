@@ -26,27 +26,26 @@ export type UnlockState = {
   mutual: boolean;
 };
 
+/**
+ * Goes through unlock_state() rather than reading the unlocks table, because the
+ * table is no longer readable by clients at all (schema.sql §18). It used to be,
+ * and a modified client could then see that the other person had asked — which is
+ * the one thing this feature promises never happens. Now the only facts that
+ * cross the wire are whether you asked and whether it is mutual.
+ */
 export async function unlockState(
   other: string,
   service: string,
   date: string,
 ): Promise<UnlockState> {
-  const { data: me } = await supabase.auth.getUser();
-  if (!me.user) return { iAsked: false, mutual: false };
-
-  const [lo, hi] = [me.user.id, other].sort();
-  const { data } = await supabase
-    .from('unlocks')
-    .select('a_id, a_asked, b_asked')
-    .eq('a_id', lo)
-    .eq('b_id', hi)
-    .eq('service_code', service)
-    .eq('travel_date', date)
-    .maybeSingle();
-
-  if (!data) return { iAsked: false, mutual: false };
-  const iAsked = me.user.id === data.a_id ? data.a_asked : data.b_asked;
-  return { iAsked, mutual: data.a_asked && data.b_asked };
+  const { data, error } = await supabase.rpc('unlock_state', {
+    other,
+    p_service: service,
+    p_date: date,
+  });
+  const row = (data as { i_asked: boolean; mutual: boolean }[] | null)?.[0];
+  if (error || !row) return { iAsked: false, mutual: false };
+  return { iAsked: row.i_asked, mutual: row.mutual };
 }
 
 export async function askUnlock(other: string, service: string, date: string) {
