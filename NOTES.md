@@ -132,6 +132,28 @@ alter publication supabase_realtime add table public.messages;
 Two, three and four are all the same mistake: inferring a fact that could have been
 asked for directly. Same shape as computing `travel_date` from UTC.
 
+## Sign-in survives having the app killed
+
+MIUI kills backgrounded apps aggressively, and the browser step of Google sign-in
+backgrounds Safar every time. On a Redmi Note 12 this took **four attempts**, with the
+log showing four `Running "main"` — four process deaths, one lucky survivor.
+
+It looked like an OS problem and was ours. The root layout used to swap the `<Stack>`
+out for a spinner while the session loaded, so on a cold start there was no navigator
+for the first few hundred milliseconds — and a cold start is exactly how the app comes
+back when it was killed mid sign-in. The `safar://auth/callback` deep link arrived with
+nowhere to go and was dropped, along with a perfectly good one-time code. The spinner is
+now painted **over** the navigator instead of replacing it.
+
+**Tested deliberately**: force-stopped the app while the Google account picker was open,
+then picked an account. One cold start, no errors, straight to Onboard.
+
+Xiaomi is a large share of the Indian student market, so this was not an edge case —
+it was most of the first-run experience for a lot of people.
+
+Still worth doing, both phone-side: Battery saver → No restrictions for Safar, and the
+lock icon in Recents.
+
 ## Open problems
 
 **The timetable is one train.** `data/services.ts` holds only 12229, with times

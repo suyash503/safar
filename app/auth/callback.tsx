@@ -41,6 +41,16 @@ export default function AuthCallback() {
           router.replace('/onboard');
           return;
         }
+        // When the OS killed the app mid sign-in, this screen is the only thing
+        // left running and there is no second chance. A failed exchange can still
+        // mean success — another path may have spent the code — so ask before
+        // giving up on the user's behalf.
+        const { data: after } = await supabase.auth.getSession();
+        if (cancelled) return;
+        if (after.session) {
+          router.replace('/onboard');
+          return;
+        }
         setMessage(error.message);
       } else {
         setMessage('Sign-in did not complete.');
