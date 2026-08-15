@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { ActivityIndicator, Pressable, StyleSheet, Text, View } from 'react-native';
 import { signInWithGoogle, warmUpBrowser } from '../lib/auth';
-import { colour, space } from '../lib/theme';
+import { colour, font, space } from '../lib/theme';
 
 export default function SignIn() {
   const [busy, setBusy] = useState(false);
@@ -51,13 +51,13 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
   },
   top: { flex: 1, justifyContent: 'center' },
-  // Jangkuy is caps-only and expanded — set uppercase deliberately. The face
-  // isn't loaded yet, so this is the system fallback until it is.
+  // Jangkuy is caps-only and already expanded, so it carries its own letter
+  // spacing — the tracking that propped up the system fallback would pull it
+  // apart. No fontWeight either: the weight is the file.
   wordmark: {
     color: colour.moonlight,
+    fontFamily: font.display,
     fontSize: 44,
-    letterSpacing: 8,
-    fontWeight: '700',
     marginBottom: space.md,
   },
   line: { color: colour.frost, fontSize: 17, lineHeight: 25, maxWidth: 320 },
