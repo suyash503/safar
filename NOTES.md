@@ -94,14 +94,18 @@ last re-run is worth.
 
 ## Open problems
 
-**`travel_date` is computed in UTC.** `new Date().toISOString().slice(0, 10)` in
-`app/onboard.tsx`, while India is UTC+5:30. `onboard_list()` matches on
-`service_code` **and** `travel_date`, so on an overnight service — which the
-reference train is, 22:00 → 06:35 — someone who adds the journey after 05:30 IST
-gets tomorrow's date and sees an empty train, while everyone who boarded the night
-before is filed under yesterday. It silently splits one train into two groups who
-cannot see each other. Needs a real "which date is this service" rule, decided in
-IST, when the journey screen is built.
+**The timetable is one train.** `data/services.ts` holds only 12229, with times
+taken from this file. The rest of the corridor has to be imported from
+data.gov.in. Times were deliberately not written from memory — a wrong departure
+puts a real person on the wrong platform, and being right offline is the entire
+reason the timetable is bundled rather than fetched.
+
+~~`travel_date` computed in UTC~~ — **fixed.** `lib/time.ts` does every date at a
+fixed +5:30 (India has no daylight saving, so the offset is exact), and
+`serviceDate()` in `lib/journey.ts` answers *which departure you are on* rather
+than what today is: before this morning's arrival on an overnight service, the
+train running left yesterday. `expiresAt()` is now scheduled arrival + 24h, as the
+column always meant.
 
 **An under-18 date of birth is a dead end.** `app/age.tsx` now refuses under-18 before
 saving, but if one is ever stored, Onboard shows the red rejection and there is no
@@ -306,9 +310,10 @@ Backend is finished and verified. Everything below is app work.
    messages from §17 and routes back to the age screen. **Match on message text is
    the weak point** — change the wording in schema.sql and the app stops routing.
    Worth an errcode if it ever moves.
-5. Add a journey properly → service picker off the bundled timetable, then
-   `onboard_list()` returning real rows. `app/onboard.tsx` is a stub that inserts
-   a hardcoded 12229 to prove the round trip.
+5. ~~Add a journey properly~~ — **done.** `app/journey.tsx` picks off the bundled
+   timetable, `app/onboard.tsx` is the real screen now: your journey, then
+   `onboard_list()` for the people on it, with the first-aboard state when there
+   are none. Still needs the rest of the corridor imported. ← **next**
 6. Chat + offline outbox (local write first, `client_id` for idempotent retry)
 7. Editable profile screen for the rest of `profile_private`
 8. Privacy policy + Play Data Safety declaration
