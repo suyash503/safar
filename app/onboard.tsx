@@ -53,7 +53,15 @@ export default function Onboard() {
     }
     router.push({
       pathname: '/chat/[id]',
-      params: { id: result.threadId, name: person.first_name },
+      params: {
+        id: result.threadId,
+        name: person.first_name,
+        // thread_members only returns your own row since the recursion fix, so
+        // the chat cannot look up who it is talking to — it is told.
+        other: person.id,
+        service: journey.service_code,
+        date: journey.travel_date,
+      },
     });
   }
 

@@ -22,6 +22,7 @@ import {
   retry,
   type Outgoing,
 } from '../../lib/outbox';
+import { UnlockPanel } from '../../components/unlock-panel';
 import { colour, space } from '../../lib/theme';
 
 type Row =
@@ -29,7 +30,13 @@ type Row =
   | { kind: 'pending'; message: Outgoing };
 
 export default function Chat() {
-  const { id, name } = useLocalSearchParams<{ id: string; name?: string }>();
+  const { id, name, other, service, date } = useLocalSearchParams<{
+    id: string;
+    name?: string;
+    other?: string;
+    service?: string;
+    date?: string;
+  }>();
   const router = useRouter();
   const [me, setMe] = useState<string | null>(null);
   const [messages, setMessages] = useState<Message[]>([]);
@@ -106,6 +113,10 @@ export default function Chat() {
         </Pressable>
         <Text style={styles.name}>{name ?? 'Chat'}</Text>
       </View>
+
+      {other && service && date ? (
+        <UnlockPanel other={other} name={name ?? 'They'} service={service} date={date} />
+      ) : null}
 
       <FlatList
         ref={list}
