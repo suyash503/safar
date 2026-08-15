@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Pressable, StyleSheet, Text, TextInput, View } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { readError } from '../lib/errors';
 import { colour, space } from '../lib/theme';
@@ -40,6 +40,8 @@ function isAdult(iso: string) {
 
 export default function AgeGate() {
   const router = useRouter();
+  // Where the user was headed when the gate stopped them.
+  const { next } = useLocalSearchParams<{ next?: string }>();
   const [d, setD] = useState('');
   const [m, setM] = useState('');
   const [y, setY] = useState('');
@@ -65,7 +67,7 @@ export default function AgeGate() {
       setError(readError(err)?.message ?? null);
       return;
     }
-    router.replace('/onboard');
+    router.replace((next as '/journey' | '/onboard') ?? '/onboard');
   }
 
   return (

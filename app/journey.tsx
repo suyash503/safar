@@ -28,7 +28,9 @@ export default function AddJourney() {
       return;
     }
     if (result.error.route === 'age') {
-      router.push('/age');
+      // Come back here afterwards — the age screen is an interruption, not a
+      // destination, and being dumped on Onboard means asking for the train twice.
+      router.push({ pathname: '/age', params: { next: '/journey' } });
       return;
     }
     setDanger(result.error.route === 'blocked');

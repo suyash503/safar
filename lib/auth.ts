@@ -10,6 +10,16 @@ export const redirectTo = AuthSession.makeRedirectUri({ path: 'auth/callback' })
 
 export type SignInResult = { ok: true } | { ok: false; reason: 'cancelled' | string };
 
+/** Poll for a session the callback screen may be establishing in parallel. */
+async function waitForSession(timeoutMs = 4000, everyMs = 250) {
+  const until = Date.now() + timeoutMs;
+  while (Date.now() < until) {
+    if ((await supabase.auth.getSession()).data.session) return true;
+    await new Promise((r) => setTimeout(r, everyMs));
+  }
+  return false;
+}
+
 /**
  * Two taps, no password. Opens Google in the system browser, waits for the
  * deep link back, and exchanges the code for a session.
@@ -26,17 +36,32 @@ export async function signInWithGoogle(): Promise<SignInResult> {
   if (!data?.url) return { ok: false, reason: 'Google sign-in is not configured' };
 
   const result = await WebBrowser.openAuthSessionAsync(data.url, redirectTo);
-  if (result.type !== 'success') return { ok: false, reason: 'cancelled' };
+
+  // Android hands the redirect to the app as a deep link and closes the browser,
+  // so this comes back 'dismiss' even when sign-in worked — app/auth/callback.tsx
+  // is finishing it on another thread. Cancelling and succeeding look identical
+  // here; only the session tells them apart.
+  if (result.type !== 'success') {
+    return (await waitForSession()) ? { ok: true } : { ok: false, reason: 'cancelled' };
+  }
 
   const code = new URL(result.url).searchParams.get('code');
   if (!code) {
-    // PKCE is the flow we asked for; anything else means the URL config drifted.
     const err = new URL(result.url).searchParams.get('error_description');
     return { ok: false, reason: err ?? 'Google did not return a sign-in code' };
   }
 
+  // The callback screen may already have spent this code. A PKCE code is
+  // single-use, so the second attempt fails with 'invalid flow state' — which
+  // means success, not failure. Check before spending it.
+  if ((await supabase.auth.getSession()).data.session) return { ok: true };
+
   const exchange = await supabase.auth.exchangeCodeForSession(code);
-  if (exchange.error) return { ok: false, reason: exchange.error.message };
+  if (exchange.error) {
+    // Lost the race rather than actually failed.
+    if (await waitForSession()) return { ok: true };
+    return { ok: false, reason: exchange.error.message };
+  }
   return { ok: true };
 }
 

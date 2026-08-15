@@ -87,6 +87,11 @@ real date. So even with the trigger present, nothing would have been blocked. Cl
 **Now verified from the phone, in order:** sign in → tap add journey → refused → age
 screen → under-18 refused → valid date saved → journey accepted.
 
+**Two-person test passed, 2026-08-15.** Two accounts on 12229, same travel_date, each
+sees the other on Onboard with the name and photo Google supplied. First time
+`onboard_list()` has returned a row, and the first time the product did the thing it
+exists to do. The RLS rule that you must be on a service to see anyone on it held.
+
 **The lesson worth keeping:** "verified" in this file meant a check that passed once,
 against a database state nobody re-read afterwards. The six checks in `test-auth.html`
 carry exactly the same risk. A claim about the live database is only worth what its
