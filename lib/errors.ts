@@ -45,7 +45,17 @@ export function readError(error: PostgrestError | Error | null): AppError | null
   }
 
   // Offline is the normal case on this route, not an error worth alarming about.
-  if (raw.includes('Network request failed') || raw.includes('Failed to fetch')) {
+  // Android words this as UnknownHostException rather than anything resembling
+  // "network error", which is how three messages once ended up marked as failed
+  // for the offence of being written in a tunnel.
+  if (
+    raw.includes('Network request failed') ||
+    raw.includes('Failed to fetch') ||
+    raw.includes('UnknownHostException') ||
+    raw.includes('Unable to resolve host') ||
+    raw.includes('fetch failed') ||
+    raw.includes('timed out')
+  ) {
     return { message: 'No signal. This will send itself when you are back.', route: 'none' };
   }
 

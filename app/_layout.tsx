@@ -4,6 +4,7 @@ import { StatusBar } from 'expo-status-bar';
 import { useFonts } from 'expo-font';
 import { ActivityIndicator, View } from 'react-native';
 import { SessionProvider, useSession } from '../lib/session';
+import { startOutboxPump } from '../lib/outbox';
 import { colour } from '../lib/theme';
 
 function Gate({ fontsReady }: { fontsReady: boolean }) {
@@ -50,6 +51,10 @@ export default function RootLayout() {
   const [fontsReady, fontError] = useFonts({
     Jangkuy: require('../fonts/JANGKUY-BoldExpanded.otf'),
   });
+
+  // Runs for the life of the app, not just while a chat is open — a message
+  // written in a tunnel should send itself whether or not you are looking at it.
+  useEffect(startOutboxPump, []);
 
   return (
     <SessionProvider>

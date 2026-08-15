@@ -13,7 +13,15 @@ import {
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { supabase } from '../../lib/supabase';
 import { loadMessages, subscribeToThread, type Message } from '../../lib/chat';
-import { discard, enqueue, flush, onOutboxChange, type Outgoing } from '../../lib/outbox';
+import {
+  discard,
+  enqueue,
+  flush,
+  onDelivered,
+  onOutboxChange,
+  retry,
+  type Outgoing,
+} from '../../lib/outbox';
 import { colour, space } from '../../lib/theme';
 
 type Row =
@@ -50,6 +58,14 @@ export default function Chat() {
   }, [id, refresh]);
 
   useEffect(() => onOutboxChange((q) => setQueue(q.filter((m) => m.thread_id === id))), [id]);
+
+  // A message that lands leaves the outbox, taking its pending bubble with it.
+  // Without this the message would simply vanish from the screen until the next
+  // time the chat was opened — safe in the database, gone from view.
+  useEffect(
+    () => onDelivered((threadIds) => threadIds.includes(id) && refresh()),
+    [id, refresh],
+  );
 
   // A delivered message replaces its pending twin — matched on client_id, which
   // is why the phone generates it rather than the server.
@@ -111,9 +127,15 @@ export default function Chat() {
               <Text style={mine ? styles.mineText : styles.theirsText}>{item.message.body}</Text>
               {item.kind === 'pending' ? (
                 failed ? (
-                  <Pressable onPress={() => discard(item.message.client_id)}>
-                    <Text style={styles.failed}>{failed} Tap to remove.</Text>
-                  </Pressable>
+                  <View style={styles.failedRow}>
+                    <Text style={styles.failed}>{failed}</Text>
+                    <Pressable onPress={() => retry(item.message.client_id)}>
+                      <Text style={styles.action}>Try again</Text>
+                    </Pressable>
+                    <Pressable onPress={() => discard(item.message.client_id)}>
+                      <Text style={styles.action}>Remove</Text>
+                    </Pressable>
+                  </View>
                 ) : (
                   <Text style={styles.pending}>Waiting for signal</Text>
                 )
@@ -163,6 +185,8 @@ const styles = StyleSheet.create({
   theirsText: { color: colour.moonlight, fontSize: 16, lineHeight: 22 },
   pending: { color: colour.steel, fontSize: 11, marginTop: 4 },
   failed: { color: colour.danger, fontSize: 11, marginTop: 4 },
+  failedRow: { flexDirection: 'row', alignItems: 'center', gap: space.sm, flexWrap: 'wrap' },
+  action: { color: colour.oxford, fontSize: 11, marginTop: 4, textDecorationLine: 'underline' },
   note: { color: colour.frost, textAlign: 'center', paddingBottom: space.sm },
   composer: {
     flexDirection: 'row',

@@ -97,32 +97,40 @@ against a database state nobody re-read afterwards. The six checks in `test-auth
 carry exactly the same risk. A claim about the live database is only worth what its
 last re-run is worth.
 
-## Chat — written, NOT yet proven to send a message
+## Chat — working, offline included, verified on the phone
 
-Everything is in place (`lib/outbox.ts`, `lib/chat.ts`, `app/chat/[id].tsx`, and the
-Onboard list is tappable), it typechecks, and it is blocked on two SQL statements
-that have not been run:
+Sent with signal, and sent in aeroplane mode then delivered on reconnect without
+anyone tapping anything. `lib/outbox.ts`, `lib/chat.ts`, `app/chat/[id].tsx`.
+
+Still not run, and optional — without it the screen refetches instead of updating live,
+which is why nothing depends on it:
 
 ```sql
--- Required. Without this every message insert fails.
-drop policy if exists thread_members_self on public.thread_members;
-create policy thread_members_self on public.thread_members
-  for select using (user_id = auth.uid());
-
--- Optional. Without it the screen refetches on focus instead of updating live.
 alter publication supabase_realtime add table public.messages;
 ```
 
-**The bug behind the first one is worth remembering.** `thread_members_self` was
-written as a subquery over `thread_members` itself, so Postgres re-entered the policy
-to answer its own question — `42P17, infinite recursion detected in policy for
-relation "thread_members"`. It broke every message insert, because `messages_send`
-checks membership through that table. `schema.sql` is fixed; the live database is not.
-That is now **three** things the schema file said were true of the live database and
-were not, so re-running a section is cheap and trusting the file is not.
+**Four bugs came out of this, and three share a shape.**
 
-Messages typed before the fix are sitting in the outbox on the phone and will send
-themselves once the policy lands.
+1. `thread_members_self` was a subquery over `thread_members`, so Postgres re-entered
+   the policy to answer its own question: `42P17, infinite recursion`. It failed every
+   message insert, since `messages_send` checks membership through that table. Fixed in
+   `schema.sql` and applied live.
+2. **Nothing woke the queue when signal returned.** `flush()` ran on send, on chat open
+   and on Onboard load — so sitting on the chat screen through a tunnel meant waiting
+   until you happened to navigate. `startOutboxPump()` now listens for connectivity,
+   for the app returning to the foreground, and ticks slowly as a backstop.
+3. **Offline was detected by matching error text**, and Android words it
+   `java.net.UnknownHostException: Unable to resolve host` — nothing like the
+   "Network request failed" being matched. Every offline message was therefore treated
+   as an unknown failure and burned an attempt. `flush()` now asks NetInfo whether
+   there is a network instead of inferring it, and the text match is a fallback.
+4. **A delivered message vanished from the screen.** It leaves the outbox, so its
+   pending bubble disappears, and the chat only fetched on mount — the message sat safe
+   in the database while the sender watched it evaporate. `onDelivered()` now triggers
+   a refetch.
+
+Two, three and four are all the same mistake: inferring a fact that could have been
+asked for directly. Same shape as computing `travel_date` from UTC.
 
 ## Open problems
 
@@ -156,6 +164,9 @@ or `app.json` changes: `npx expo run:android`.
 
 **Windows things that cost hours, all now fixed:**
 
+- **`android/local.properties` is pinned to `sdk.dir=C\:\\Android\\Sdk`** — the junction,
+  not the real path. It is gitignored, so a fresh clone must recreate it, and a rebuild
+  without it drags the spaced path back in through a stale CMake cache.
 - **A space in the Windows username breaks the NDK.** `clang++.cmd` gets 8.3-mangled
   to `CLANG_~1.CMD`, the wrapper loses the `++`, links as C, and every libc++ symbol
   comes back undefined. Fixed with a junction: `C:\Android\Sdk` → the real SDK, and
