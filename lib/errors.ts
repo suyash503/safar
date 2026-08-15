@@ -39,6 +39,10 @@ export function readError(error: PostgrestError | Error | null): AppError | null
   if (raw.includes('not on the same journey')) {
     return { message: 'That person is no longer on this train.', route: 'none' };
   }
+  // journeys is unique on (user_id, service_code, travel_date).
+  if (raw.includes('duplicate key value') || (error as PostgrestError).code === '23505') {
+    return { message: 'You are already on this train.', route: 'none' };
+  }
 
   // Offline is the normal case on this route, not an error worth alarming about.
   if (raw.includes('Network request failed') || raw.includes('Failed to fetch')) {
