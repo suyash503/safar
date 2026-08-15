@@ -13,6 +13,8 @@ import { useFocusEffect, useRouter } from 'expo-router';
 import { supabase } from '../lib/supabase';
 import { readError } from '../lib/errors';
 import { signOut } from '../lib/auth';
+import { startDm } from '../lib/chat';
+import { flush } from '../lib/outbox';
 import { stationName } from '../data/services';
 import { colour, space } from '../lib/theme';
 
@@ -32,9 +34,33 @@ export default function Onboard() {
   const [people, setPeople] = useState<Traveller[]>([]);
   const [loading, setLoading] = useState(true);
   const [note, setNote] = useState<string | null>(null);
+  const [opening, setOpening] = useState<string | null>(null);
+
+  /**
+   * start_dm() is where the rules live: you must share the journey, neither of
+   * you may have blocked the other, and a new account gets three conversations
+   * per journey. Tapping the same person twice returns the same thread.
+   */
+  async function talkTo(person: Traveller) {
+    if (!journey) return;
+    setOpening(person.id);
+    setNote(null);
+    const result = await startDm(person.id, journey.service_code, journey.travel_date);
+    setOpening(null);
+    if (!result.ok) {
+      setNote(result.error.message);
+      return;
+    }
+    router.push({
+      pathname: '/chat/[id]',
+      params: { id: result.threadId, name: person.first_name },
+    });
+  }
 
   const load = useCallback(async () => {
     setNote(null);
+    // Coming back into signal is the moment to drain anything written in a tunnel.
+    flush();
     const { data: me } = await supabase.auth.getUser();
     if (!me.user) return;
 
@@ -118,7 +144,12 @@ export default function Onboard() {
             </View>
           ) : (
             people.map((p) => (
-              <View key={p.id} style={styles.card}>
+              <Pressable
+                key={p.id}
+                style={styles.card}
+                onPress={() => talkTo(p)}
+                disabled={opening === p.id}
+              >
                 {p.photo_url ? (
                   <Image source={{ uri: p.photo_url }} style={styles.photo} />
                 ) : (
@@ -129,7 +160,8 @@ export default function Onboard() {
                   {p.bio ? <Text style={styles.bio}>{p.bio}</Text> : null}
                   {p.tags?.length ? <Text style={styles.tags}>{p.tags.join(' · ')}</Text> : null}
                 </View>
-              </View>
+                {opening === p.id ? <ActivityIndicator color={colour.frost} /> : null}
+              </Pressable>
             ))
           )}
         </>

@@ -97,6 +97,33 @@ against a database state nobody re-read afterwards. The six checks in `test-auth
 carry exactly the same risk. A claim about the live database is only worth what its
 last re-run is worth.
 
+## Chat — written, NOT yet proven to send a message
+
+Everything is in place (`lib/outbox.ts`, `lib/chat.ts`, `app/chat/[id].tsx`, and the
+Onboard list is tappable), it typechecks, and it is blocked on two SQL statements
+that have not been run:
+
+```sql
+-- Required. Without this every message insert fails.
+drop policy if exists thread_members_self on public.thread_members;
+create policy thread_members_self on public.thread_members
+  for select using (user_id = auth.uid());
+
+-- Optional. Without it the screen refetches on focus instead of updating live.
+alter publication supabase_realtime add table public.messages;
+```
+
+**The bug behind the first one is worth remembering.** `thread_members_self` was
+written as a subquery over `thread_members` itself, so Postgres re-entered the policy
+to answer its own question — `42P17, infinite recursion detected in policy for
+relation "thread_members"`. It broke every message insert, because `messages_send`
+checks membership through that table. `schema.sql` is fixed; the live database is not.
+That is now **three** things the schema file said were true of the live database and
+were not, so re-running a section is cheap and trusting the file is not.
+
+Messages typed before the fix are sitting in the outbox on the phone and will send
+themselves once the policy lands.
+
 ## Open problems
 
 **The timetable is one train.** `data/services.ts` holds only 12229, with times

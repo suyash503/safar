@@ -275,10 +275,15 @@ create policy threads_member on public.threads
     select 1 from thread_members m where m.thread_id = id and m.user_id = auth.uid()
   ));
 
+-- Your own membership rows, and nothing else. This was originally written as a
+-- subquery over thread_members itself, which made Postgres re-enter the policy to
+-- answer its own question: 42P17, infinite recursion. It failed every message
+-- insert, because messages_send checks membership through this table.
+--
+-- Nothing needs to read the other member's row — the chat screen already knows
+-- who it is talking to — so the direct test is both correct and cheaper.
 create policy thread_members_self on public.thread_members
-  for select using (exists (
-    select 1 from thread_members m where m.thread_id = thread_id and m.user_id = auth.uid()
-  ));
+  for select using (user_id = auth.uid());
 
 create policy messages_read on public.messages
   for select using (exists (
