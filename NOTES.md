@@ -32,7 +32,7 @@ they have no friends.
 |---|---|
 | Clickable prototype (6 modes) | **Done** — `index.html` |
 | Product & design decisions | **Done** — see below |
-| Database schema | Applied — but **§17's age-gate trigger is not live**, see Open problem |
+| Database schema | **Done** — 17 sections; §17's trigger re-run 2026-08-15 and verified from the app |
 | `pg_cron` sweep | **Done** — `safar-sweep`, hourly |
 | Google OAuth — web client | **Done** in Google Console + Supabase |
 | Google OAuth — Android client | **Deferred** (needs a build for the SHA-1) |
@@ -69,28 +69,44 @@ same breath as any future policy that calls a helper.
 
 ---
 
-## Open problem — the age gate is not enforced
+## The age gate — fixed and verified from the app
 
 **The project now lives at `C:\dev\safar`**, not in OneDrive. The OneDrive copy is
-stale; treat it as a backup and delete it once this is pushed.
+stale; treat it as a backup and delete it.
 
-On 2026-08-15, from the app, a signed-in account with no `dob` inserted a journey
-**successfully**. Section 17 says that must raise `set your date of birth before
-adding a journey`. The schema file is correct — the trigger simply is not in the
-live database, so nothing is enforcing 18+ right now.
+On 2026-08-15 a signed-in account inserted a journey that should have been refused.
+Cause: `journeys_adult` was **not in the live database** — `pg_trigger` listed only
+`journeys_bump`. Section 17 had been committed and written up as verified, but never
+actually run. Re-running §17 created it.
 
-Next session, run in the SQL editor:
+A second thing hid the first: both test accounts already had a `dob`, because before
+§17 the column was `NOT NULL` and every row created during backend testing carried a
+real date. So even with the trigger present, nothing would have been blocked. Clearing
+`dob` was needed to see the gate work at all.
 
-```sql
-select tgname from pg_trigger
-where tgrelid = 'public.journeys'::regclass and not tgisinternal;
-select id, dob from public.profile_private;
-select id, service_code, travel_date from public.journeys;
-```
+**Now verified from the phone, in order:** sign in → tap add journey → refused → age
+screen → under-18 refused → valid date saved → journey accepted.
 
-If `journeys_adult` is absent, re-run §17 and delete the journey row that should
-never have existed. Then re-verify — the "verified" line above was trusted and was
-wrong, which is the actual lesson.
+**The lesson worth keeping:** "verified" in this file meant a check that passed once,
+against a database state nobody re-read afterwards. The six checks in `test-auth.html`
+carry exactly the same risk. A claim about the live database is only worth what its
+last re-run is worth.
+
+## Open problems
+
+**`travel_date` is computed in UTC.** `new Date().toISOString().slice(0, 10)` in
+`app/onboard.tsx`, while India is UTC+5:30. `onboard_list()` matches on
+`service_code` **and** `travel_date`, so on an overnight service — which the
+reference train is, 22:00 → 06:35 — someone who adds the journey after 05:30 IST
+gets tomorrow's date and sees an empty train, while everyone who boarded the night
+before is filed under yesterday. It silently splits one train into two groups who
+cannot see each other. Needs a real "which date is this service" rule, decided in
+IST, when the journey screen is built.
+
+**An under-18 date of birth is a dead end.** `app/age.tsx` now refuses under-18 before
+saving, but if one is ever stored, Onboard shows the red rejection and there is no
+route back to the age screen and no way to reach a human. Correct for a genuine
+under-18 user; unrecoverable for a typo. Decide before real users.
 
 ## How to run the app
 

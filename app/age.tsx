@@ -29,6 +29,15 @@ function isoFrom(d: string, m: string, y: string) {
   return date.toISOString().slice(0, 10);
 }
 
+// Same rule as assert_adult() in schema.sql §17. The database is still the
+// authority — this only exists so the screen that asks the question is the one
+// that answers it, instead of saving a date and failing later somewhere else.
+function isAdult(iso: string) {
+  const dob = new Date(iso + 'T00:00:00Z');
+  const eighteen = new Date(Date.UTC(dob.getUTCFullYear() + 18, dob.getUTCMonth(), dob.getUTCDate()));
+  return eighteen <= new Date();
+}
+
 export default function AgeGate() {
   const router = useRouter();
   const [d, setD] = useState('');
@@ -42,6 +51,10 @@ export default function AgeGate() {
   async function onSave() {
     if (!iso) {
       setError('That date does not exist.');
+      return;
+    }
+    if (!isAdult(iso)) {
+      setError('Safar is only for people over 18.');
       return;
     }
     setBusy(true);
