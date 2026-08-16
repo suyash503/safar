@@ -224,6 +224,38 @@ saving, but if one is ever stored, Onboard shows the red rejection and there is 
 route back to the age screen and no way to reach a human. Correct for a genuine
 under-18 user; unrecoverable for a typo. Decide before real users.
 
+## A shareable APK
+
+```
+cd C:\dev\safar
+npx expo run:android --variant release --no-bundler
+```
+
+25 minutes, because release compiles native code for all four architectures rather
+than just this phone's. Output is `android/app/build/outputs/apk/release/app-release.apk`,
+about 95 MB. The JavaScript is bundled in, so it runs with no laptop attached — that is
+what makes it shareable at all.
+
+Send it over WhatsApp or Drive; the recipient taps it and allows an install from an
+unknown source. That is the distribution plan from the cold-start section, and it needs
+no Play Store, no $25, and no closed test.
+
+**Three things to know about this build:**
+
+- **It is signed with `safar-debug.keystore`**, because `build.gradle` points the release
+  signing config at the debug one. That is why Google sign-in works in it — same
+  fingerprint Google knows. Fine for people you know; a real release key would need its
+  fingerprint registered too, and would break sign-in until it was.
+- **The Supabase URL and anon key are inside it.** By design — the anon key is public and
+  RLS is the protection — but anyone holding the APK can read them. It writes to the
+  **production** branch.
+- **95 MB is fat** for students on limited data. An ABI split, or building arm64 only,
+  roughly quarters it. Worth doing before sending it to a WhatsApp group.
+
+**Not safe to hand to strangers yet:** there is still no block and no report, so two
+people can talk with no way for either to make it stop. That is two of the safety
+model's three pillars missing.
+
 ## How to run the app
 
 ```
