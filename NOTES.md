@@ -32,7 +32,7 @@ they have no friends.
 |---|---|
 | Clickable prototype (6 modes) | **Done** — `index.html` |
 | Product & design decisions | **Done** — see below |
-| Database schema | **Done** — 17 sections; §17's trigger re-run 2026-08-15 and verified from the app |
+| Database schema | **Done** — 18 sections; §17 and §18 applied 2026-08-15, both verified from the app |
 | `pg_cron` sweep | **Done** — `safar-sweep`, hourly |
 | Google OAuth — web client | **Done** in Google Console + Supabase |
 | Google OAuth — Android client | **Deferred** (needs a build for the SHA-1) |
@@ -154,32 +154,24 @@ it was most of the first-run experience for a lot of people.
 Still worth doing, both phone-side: Battery saver → No restrictions for Safar, and the
 lock icon in Recents.
 
-## START HERE — §18 is written but not applied, and unlock silence is untested
+## Unlock silence — enforced, and tested from both sides
 
-Two SQL statements to run, then a four-step test. Both are in the app already; the
-live database has neither.
+§18 applied 2026-08-15. Tested on the phone: account A asked, account B opened the same
+chat and saw a plain first-time **Ask to unlock** with no hint whatsoever, then asked and
+it opened for both. The promise now holds because the fact never leaves the database,
+not because the client is well behaved.
 
-**1. Close the silence leak (§18 of `schema.sql`, run it verbatim).** `unlocks` was
-granted SELECT to `authenticated` with a policy letting *either* party read the row —
-and the row holds `a_asked` and `b_asked` separately. So a modified client could see
-that the other person had asked, before asking, or without ever asking. The app only
-derived "mutual" from it, so nothing looked wrong, but that is the client being polite
-about a fact the server handed it. Asking is the most sensitive moment in the product.
-§18 revokes the grant and replaces it with `unlock_state()`, which returns only whether
-*you* asked and whether it is mutual. `lib/unlock.ts` already calls the RPC, so **until
-§18 runs, the unlock panel will show everyone as not-asked.**
+**What §18 was for.** `unlocks` had been granted SELECT to `authenticated` with a policy
+letting *either* party read the row, and the row holds `a_asked` and `b_asked` as
+separate columns — so a modified client could see that the other person had asked,
+before asking, or without ever asking. The app only derived "mutual" from it, so nothing
+looked wrong. That is the client being polite about a fact the server handed it. §18
+revokes the grant and replaces it with `unlock_state()`, which returns only whether *you*
+asked and whether it is mutual.
 
-**2. Reset for a clean test:** `delete from public.unlocks;`
-
-**3. Then test the silence, which has never been checked:**
-
-1. Account A: open the chat, tap **Ask to unlock** → "You asked to unlock…"
-2. Sign in as account B, open the same chat → **must show a plain Ask to unlock
-   button, with no hint that A asked.** This step is the entire test.
-3. B taps it → opens for B immediately.
-4. Back to A → now shows unlocked.
-
-If step 2 reads any differently from a first-time view, the promise is broken.
+**Found by trying to test the promise rather than trusting it.** The same is true of the
+age gate and the realtime publication. It is now the single most reliable way this
+project finds real bugs.
 
 ## Open problems
 
