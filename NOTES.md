@@ -35,9 +35,9 @@ they have no friends.
 | Database schema | **Done** — 18 sections; §17 and §18 applied 2026-08-15, both verified from the app |
 | `pg_cron` sweep | **Done** — `safar-sweep`, hourly |
 | Google OAuth — web client | **Done** in Google Console + Supabase |
-| Google OAuth — Android client | **Deferred** (needs a build for the SHA-1) |
+| Google OAuth — Android client | **Done** — `com.safar.app` + the SHA-1 of `android/app/safar-debug.keystore` |
 | Expo app | **Runs on a real device** — SDK 57, expo-router |
-| Google Sign-In in the app | **Working end to end**, verified on a Redmi Note 12 |
+| Google Sign-In in the app | **Native**, no browser. Three accounts including a brand-new one |
 | Privacy policy / Play Data Safety | Not started |
 
 **Verified state of the database** (re-run any time to confirm nothing drifted):
@@ -131,6 +131,37 @@ alter publication supabase_realtime add table public.messages;
 
 Two, three and four are all the same mistake: inferring a fact that could have been
 asked for directly. Same shape as computing `travel_date` from UTC.
+
+## Sign-in is native now, and the keystore is load-bearing
+
+The account picker is a sheet inside the app, so the browser never takes over and the
+OS never gets a window to kill Safar in. Tested with three accounts including one
+created from scratch: no Chrome, no fallback, no retry, and the new account went
+through the whole first run — profile created from Google, age gate, journey.
+
+**Things that live outside the repo and will be needed again:**
+
+- `android/app/safar-debug.keystore` — **back this up.** `android/` is untracked, and
+  the app's identity to Google is this file's SHA-1
+  (`FB:F3:23:69:98:DD:CE:28:88:7D:16:66:EE:2E:43:DE:26:90:85:CB`). Lose it and sign-in
+  breaks until a new fingerprint is registered.
+- `android/app/build.gradle` points the debug signing config at that keystore. Also
+  untracked, so a fresh clone reverts to Expo's default and sign-in fails.
+- An Android OAuth client in the same Google project as the web client, package
+  `com.safar.app`, that SHA-1. Missing → `DEVELOPER_ERROR`, code 10.
+- `EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID` in `.env` — the **web** client id, since that is
+  the audience Supabase verifies. Metro reads env at startup: restart it after editing.
+
+**Why a new keystore was needed:** `create-expo-app` ships a `debug.keystore` identical
+for everyone who scaffolds a project, and `com.safar.app` was already registered against
+that fingerprint by somebody else. Google enforces package+SHA-1 uniqueness globally, so
+the Android client could not be created at all. The Expo default is kept alongside as
+`debug.keystore.expo-default`.
+
+**Still there:** `INTERNAL_ERROR` (code 8) when switching accounts after a sign-out.
+Treated as transient — the code clears Google's cached credential state and asks once
+more before falling back to the browser. If sign-in ever needs two taps again, look for
+that line.
 
 ## Sign-in survives having the app killed
 
