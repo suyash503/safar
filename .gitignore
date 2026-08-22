@@ -52,3 +52,42 @@ desktop.ini
 
 # throwaway auth diagnostic — holds project keys while testing
 test-auth.html
+
+# --- added by Push-Safar.ps1 ---
+node_modules/
+npm-debug.log
+yarn-error.log
+
+# Android generated
+android/build/
+android/app/build/
+android/.gradle/
+android/.idea/
+android/local.properties
+android/app/release/
+*.apk
+*.aab
+*.keystore
+!debug.keystore
+
+# iOS generated
+ios/Pods/
+ios/build/
+ios/*.xcworkspace/xcuserdata/
+
+# Expo / Metro
+.expo/
+.expo-shared/
+.metro-health-check*
+
+# Secrets
+.env
+.env.*
+!.env.example
+google-services.json
+GoogleService-Info.plist
+
+# Misc
+.DS_Store
+Thumbs.db
+coverage/
